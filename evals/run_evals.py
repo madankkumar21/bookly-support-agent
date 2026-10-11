@@ -250,7 +250,7 @@ def main() -> None:
 
     overrides = dict(o.split("=", 1) for o in args.override)
     scenarios = load_scenarios({x.strip() for x in args.only.split(",") if x.strip()} or None)
-    client = anthropic.Anthropic(timeout=120, max_retries=3)
+    client = config.make_client(timeout=120, max_retries=3)
     budget = Budget(args.budget)
     out = HERE / "results" / f"{datetime.now():%Y-%m-%d}-{args.label}"
     out.mkdir(parents=True, exist_ok=True)

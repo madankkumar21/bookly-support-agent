@@ -30,6 +30,18 @@ AGENT_MAX_TOKENS = int(os.getenv("BOOKLY_AGENT_MAX_TOKENS", "4000"))
 # Simulated customer for evals.
 SIM_MODEL = os.getenv("BOOKLY_SIM_MODEL", "claude-haiku-5-5")
 
+# Only needed when the API key is not scoped to a workspace.
+WORKSPACE_ID = os.getenv("ANTHROPIC_WORKSPACE_ID", "").strip()
+
+
+def make_client(timeout: float = 90, max_retries: int = 2):
+    """One place to build the Anthropic client, so every caller sends the same headers."""
+    import anthropic
+
+    headers = {"anthropic-workspace-id": WORKSPACE_ID} if WORKSPACE_ID else None
+    return anthropic.Anthropic(timeout=timeout, max_retries=max_retries, default_headers=headers)
+
+
 # Loop limits.
 MAX_TOOL_STEPS_PER_TURN = 6
 MAX_CUSTOMER_TURNS = 14

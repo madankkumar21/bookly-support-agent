@@ -118,7 +118,7 @@ class Agent:
         self.kb = PolicyText(self.policy)
         self.session = Session()
         self.toolbox = Toolbox(self.session, self.backend, self.policy, self.kb)
-        self.client = client or anthropic.Anthropic(timeout=90, max_retries=2)
+        self.client = client or config.make_client()
         self.model, self.effort = model, effort
         self.system = build_system_prompt()
         self.messages: list[dict] = []
