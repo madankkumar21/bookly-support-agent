@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bookly Support</title>
+<style>
+  :root {
+    --bg: #f6f3ee; --panel: #ffffff; --ink: #1f2328; --muted: #6b6f76; --line: #e3ddd3;
+    --brand: #1f5f4a; --brand-ink: #ffffff; --me: #e7efe9; --model: #2f6fd6; --code: #59606b;
+    --ok: #1e7d4f; --bad: #b3261e; --warn: #9a6400; --card: #fff8e8; --card-line: #e8cf8f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15181c; --panel: #1d2126; --ink: #e8e6e3; --muted: #9aa0a6; --line: #2e333a;
+      --brand: #3f9b7a; --brand-ink: #0d1411; --me: #22302a; --model: #7aa7ff; --code: #a4abb4;
+      --ok: #4cc38a; --bad: #ff8a80; --warn: #e0b04f; --card: #2a261c; --card-line: #6b5a2e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { font-size: 17px; margin: 0; } header h1 span { color: var(--brand); }
+  .badge { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+  main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; padding: 16px; max-width: 1200px; margin: 0 auto; height: calc(100vh - 54px); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 0; }
+  .chat-log { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 82%; padding: 9px 12px; border-radius: 12px; white-space: pre-wrap; }
+  .bot { background: var(--bg); align-self: flex-start; border-top-left-radius: 4px; }
+  .me { background: var(--me); align-self: flex-end; border-top-right-radius: 4px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-self: flex-start; }
+  .chip { border: 1px solid var(--brand); color: var(--brand); background: transparent; border-radius: 999px; padding: 4px 11px; font-size: 13px; cursor: pointer; }
+  .chip:hover { background: var(--brand); color: var(--brand-ink); }
+  .card { align-self: flex-start; max-width: 88%; border: 1px solid var(--card-line); background: var(--card); border-radius: 12px; padding: 12px; }
+  .card h3 { margin: 0 0 6px; font-size: 14px; } .card .terms { color: var(--muted); font-size: 13.5px; margin: 6px 0 10px; }
+  .card .row { font-size: 14px; } .card button { margin-right: 8px; }
+  .btn { border: 0; border-radius: 8px; padding: 7px 14px; font-weight: 600; cursor: pointer; }
+  .btn.primary { background: var(--brand); color: var(--brand-ink); } .btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .composer { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
+  .composer textarea { flex: 1; resize: none; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; font: inherit; background: var(--bg); color: var(--ink); height: 42px; }
+  .typing { color: var(--muted); font-size: 13px; align-self: flex-start; }
+  .panel-head { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .panel-head h2 { font-size: 14px; margin: 0 0 4px; }
+  .legend { font-size: 12px; color: var(--muted); } .legend b.m { color: var(--model); } .legend b.c { color: var(--code); }
+  .trace { flex: 1; overflow-y: auto; padding: 10px 14px; font: 12.5px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .turn { margin: 10px 0 4px; color: var(--muted); font-weight: 600; font-family: -apple-system, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .ev { padding: 2px 0 2px 8px; border-left: 2px solid var(--line); margin: 2px 0; word-break: break-word; }
+  .ev.model { color: var(--model); border-color: var(--model); } .ev.code { color: var(--code); }
+  .ev.ok { color: var(--ok); border-color: var(--ok); } .ev.bad { color: var(--bad); border-color: var(--bad); } .ev.warn { color: var(--warn); border-color: var(--warn); }
+  .ev.dim { color: var(--muted); border-color: transparent; font-size: 11.5px; }
+  .systems { border-top: 1px solid var(--line); padding: 10px 14px; font-size: 13px; max-height: 32%; overflow-y: auto; }
+  .systems h2 { font-size: 13px; margin: 0 0 6px; } .systems .empty { color: var(--muted); }
+  .systems div.rec { padding: 3px 0; border-bottom: 1px dashed var(--line); }
+  details.help { font-size: 12.5px; color: var(--muted); align-self: flex-start; max-width: 90%; }
+  details.help code { font-size: 12px; }
+  @media (max-width: 820px) { main { grid-template-columns: 1fr; height: auto; } section.chat { height: 72vh; } section.hood { height: 70vh; } }
+</style>
+</head>
+<body>
+<header>
+  <h1><span>Bookly</span> Support</h1>
+  <span class="badge" id="model">connecting…</span>
+</header>
+<main>
+  <section class="chat">
+    <div class="chat-log" id="log"></div>
+    <form class="composer" id="form">
+      <textarea id="input" placeholder="Type a message…" autocomplete="off"></textarea>
+      <button class="btn primary" type="submit" id="send">Send</button>
+    </form>
+  </section>
+  <section class="hood">
+    <div class="panel-head">
+      <h2>Under the hood</h2>
+      <div class="legend"><b class="m">Blue</b> = the model chose it · <b class="c">Grey</b> = code decided it · green / red = the gate allowed / blocked a write</div>
+    </div>
+    <div class="trace" id="trace"><div class="ev dim">Every tool call, gate decision and confirmation shows here, turn by turn.</div></div>
+    <div class="systems" id="systems"></div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let sessionId = null, busy = false;
+
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function scroll(node) { node.scrollTop = node.scrollHeight; }
+
+function addMsg(text, who) { const m = el("div", "msg " + who, text); $("log").appendChild(m); scroll($("log")); return m; }
+
+function addChips(options, onPick) {
+  const wrap = el("div", "chips");
+  options.forEach((o) => { const b = el("button", "chip", o); b.type = "button"; b.onclick = () => { wrap.remove(); onPick(o); }; wrap.appendChild(b); });
+  $("log").appendChild(wrap); scroll($("log"));
+}
+
+function addCard(c) {
+  const card = el("div", "card");
+  card.appendChild(el("h3", null, "Please confirm"));
+  card.appendChild(el("div", "row", `${c.items.join(", ")} · ${c.reason}`));
+  card.appendChild(el("div", "row", `Amount: ${c.amount}`));
+  card.appendChild(el("div", "terms", c.terms));
+  const yes = el("button", "btn primary", "Confirm"), no = el("button", "btn ghost", "Cancel");
+  yes.type = no.type = "button";
+  const done = (button) => { yes.disabled = no.disabled = true; send("", button); };
+  yes.onclick = () => done("confirm"); no.onclick = () => done("cancel");
+  card.appendChild(yes); card.appendChild(no);
+  $("log").appendChild(card); scroll($("log"));
+}
+
+function fmtArgs(input) { return Object.entries(input || {}).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", "); }
+
+function resultLine(tool, r) {
+  if (tool === "get_order") return r.status + (r.order ? ` · ${r.order.status}` : "");
+  if (tool === "check_return_eligibility") {
+    if (r.status === "blocked") return "blocked: " + r.reason;
+    if (r.decision === "needs_input") return `needs_input (${r.field})`;
+    if (r.decision === "ineligible") return `ineligible (${r.reason_code})`;
+    if (r.decision === "needs_human") return `needs_human ($${r.amount} over limit)`;
+    return `${r.decision} · $${r.amount} · quote ${r.quote_id}`;
+  }
+  if (tool === "create_return") return r.status + (r.rma_id ? ` · ${r.rma_id} / ${r.refund_id}` : r.reason ? ` · ${r.reason}` : "");
+  if (tool === "search_policy") return `${(r.passages || []).length} passage(s) ${(r.passages || []).map((p) => p.id).join(", ")}`;
+  if (tool === "handoff_to_human") return `queued · ${r.ticket_id}`;
+  return r.status || JSON.stringify(r);
+}
+
+let lastTurn = 0;
+function renderTrace(events, latency) {
+  const t = $("trace");
+  if (lastTurn === 0) t.innerHTML = "";
+  const turn = events.length ? events[0].turn : lastTurn + 1;
+  lastTurn = turn;
+  t.appendChild(el("div", "turn", `Turn ${turn}`));
+  events.forEach((e) => {
+    let cls = "code", txt = "";
+    if (e.kind === "confirmation") { cls = e.signal === "confirm" ? "ok" : "warn"; txt = `customer's reply to the card, read by code: ${e.signal} (${e.source})`; }
+    else if (e.kind === "tool_call") { cls = "model"; txt = `→ ${e.tool}(${fmtArgs(e.input)})`; }
+    else if (e.kind === "tool_result") { cls = e.result && e.result.status === "blocked" ? "bad" : "code"; txt = `← ${resultLine(e.tool, e.result || {})}`; }
+    else if (e.kind === "gate") { cls = e.allowed ? "ok" : "bad"; txt = `gate · create_return ${e.allowed ? "ALLOWED" : "BLOCKED"} · ${e.reason}`; }
+    else if (e.kind === "card_shown") { cls = "warn"; txt = `confirmation card shown · ${e.quote_id} (terms rendered by code)`; }
+    else if (e.kind === "claim_check") { cls = "bad"; txt = "claim check replaced a reply that claimed an unbacked refund"; }
+    else if (e.kind === "api_call") { cls = "dim"; txt = `${e.model} · ${e.stop_reason} · ${e.latency_ms} ms`; }
+    else if (e.kind === "api_error" || e.kind === "tool_error") { cls = "bad"; txt = e.kind; }
+    else return;
+    t.appendChild(el("div", "ev " + cls, txt));
+  });
+  if (latency) t.appendChild(el("div", "ev dim", `turn latency ${latency} ms`));
+  scroll(t);
+}
+
+function renderSystems(s) {
+  const box = $("systems"); box.innerHTML = "";
+  box.appendChild(el("h2", null, "Bookly systems (mock)"));
+  if (!s.returns.length && !s.tickets.length && !s.password_resets.length) { box.appendChild(el("div", "empty", "No returns, tickets or resets yet.")); return; }
+  s.returns.forEach((r) => box.appendChild(el("div", "rec", `Return ${r.rma_id} · refund ${r.refund_id} · $${r.amount.toFixed(2)} · ${r.reason} · ${r.resolution}`)));
+  s.tickets.forEach((tk) => box.appendChild(el("div", "rec", `Ticket ${tk.ticket_id} · ${tk.reason_code} · ${tk.payload.identity}`)));
+  s.password_resets.forEach((e) => box.appendChild(el("div", "rec", `Password reset link sent · ${e}`)));
+}
+
+async function send(text, button) {
+  if (busy || !sessionId) return;
+  if (!text.trim() && !button) return;
+  busy = true; $("send").disabled = true;
+  addMsg(button ? (button === "confirm" ? "✓ Confirmed" : "✕ Cancelled") : text, "me");
+  const typing = el("div", "typing", "Bookly is typing…"); $("log").appendChild(typing); scroll($("log"));
+  try {
+    const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: sessionId, text, button }) });
+    if (!res.ok) throw new Error(await res.text());
+    const d = await res.json();
+    typing.remove();
+    addMsg(d.reply, "bot");
+    if (d.options && d.options.length) addChips(d.options, (o) => send(o));
+    if (d.card) addCard(d.card);
+    renderTrace(d.events, d.latency_ms);
+    renderSystems(d.systems);
+  } catch (err) {
+    typing.remove(); addMsg("Something went wrong: " + err.message, "bot");
+  } finally { busy = false; $("send").disabled = false; $("input").focus(); }
+}
+
+$("form").onsubmit = (e) => { e.preventDefault(); const v = $("input").value; $("input").value = ""; send(v); };
+$("input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("form").requestSubmit(); } });
+
+(async () => {
+  const r = await fetch("/api/session", { method: "POST" });
+  const d = await r.json();
+  sessionId = d.session_id; $("model").textContent = d.model;
+  addMsg("Hi! I'm Bookly's assistant. I can check on an order, help with a return or refund, or answer questions about shipping and our policies.", "bot");
+  addChips(["My order is messed up", "Where is my order?", "Do you ship to Canada?", "I forgot my password"], (o) => send(o));
+  const help = el("details", "help");
+  help.innerHTML = `<summary>Test accounts</summary>
+    <code>BK-1001 maya.chen@example.com</code> damaged book, delivered 4 days ago<br>
+    <code>BK-1002 dan.ortiz@example.com</code> three books, delivered 12 days ago<br>
+    <code>BK-1003 priya.nair@example.com</code> delivered 31 days ago<br>
+    <code>BK-1005 jordan.blake@example.com</code> ebook, downloaded<br>
+    <code>BK-1007 elena.rossi@example.com</code> $129.99 box set<br>
+    <code>BK-1008 marcus.webb@example.com</code> delivered 90 days ago<br>
+    <code>BK-1009 aisha.khan@example.com</code> in transit<br>
+    <code>BK-1010 tom.becker@example.com</code> delivered 20 days ago<br>
+    <code>BK-1013 nina.patel@example.com</code> late, probably lost`;
+  $("log").appendChild(help);
+  renderSystems({ returns: [], tickets: [], password_resets: [] });
+})();
+</script>
+</body>
+</html>
