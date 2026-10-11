@@ -1,0 +1,79 @@
+# Customer-facing policy text. Placeholders like {returns.print_return_window_days}
+# are filled from policy.yaml at load time.
+# RULE (enforced by tests/test_policy_text.py): no digits in this file outside placeholders.
+# Values live only in policy.yaml, so the text the agent quotes always matches what the engine does.
+
+passages:
+  - id: returns-print
+    title: Returning a print book
+    keywords: [return, returns, refund, refunds, send back, change of mind, changed my mind, didn't like, unwanted, window, policy]
+    text: >-
+      You can return a print book for a refund within {returns.print_return_window_days} days of delivery
+      if you no longer want it. We email a prepaid return label, valid for {returns.label_valid_days} days.
+      The refund goes to your original payment method once the carrier scans the package.
+
+  - id: returns-damaged
+    title: Damaged or wrong items
+    keywords: [damaged, damage, broken, torn, wrong item, wrong book, defective, misprint, refund, return]
+    text: >-
+      If a print book arrives damaged, or we send the wrong book, you get a full refund without sending
+      it back, as long as you tell us within {returns.damaged_window_days} days of delivery.
+
+  - id: returns-ebook
+    title: Ebook refunds
+    keywords: [ebook, e-book, digital, kindle, download, downloaded, refund]
+    text: >-
+      Ebooks can be refunded within {returns.ebook_refund_window_days} days of purchase if the ebook has
+      never been downloaded. Once an ebook is downloaded it cannot be refunded.
+
+  - id: refunds-timing
+    title: When refunds arrive
+    keywords: [refund, refunds, when, how long, timing, money back, credit card, payment]
+    text: >-
+      Refunds go back to the original payment method. They usually arrive within
+      {returns.refund_business_days} business days after we approve them. Refunds above
+      {returns.human_approval_over_usd} are reviewed by a member of our team first.
+
+  - id: shipping-times
+    title: Shipping times
+    keywords: [shipping, ship, delivery, deliver, how long, arrive, standard, expedited, express, time]
+    text: >-
+      Standard shipping takes {shipping.standard_business_days} business days. Expedited shipping takes
+      {shipping.expedited_business_days} business days. Delivery time starts when the order ships.
+
+  - id: shipping-costs
+    title: Shipping costs
+    keywords: [shipping cost, shipping fee, free shipping, cost, fee, price of shipping, how much]
+    text: >-
+      Standard shipping is free on orders over {shipping.free_standard_over_usd}. Below that, standard
+      shipping costs {shipping.standard_fee_usd}.
+
+  - id: shipping-regions
+    title: Where we ship
+    keywords: [international, canada, country, countries, ship to, abroad, overseas, region]
+    text: >-
+      We ship to {shipping.ships_to}. We do not ship to other countries at this time.
+
+  - id: shipping-lost
+    title: Late or lost packages
+    keywords: [lost, late, missing, never arrived, not arrived, delayed, tracking, stuck]
+    text: >-
+      If tracking has not updated for {shipping.lost_after_business_days_past_eta} business days after the
+      estimated delivery date, we treat the package as lost and a member of our team arranges a
+      replacement or a refund.
+
+  - id: account-password
+    title: Password reset
+    keywords: [password, reset, log in, login, sign in, locked out, account, forgot]
+    text: >-
+      To reset your password, we send a reset link to the email address on your account. The link is valid
+      for {account.reset_link_valid_minutes} minutes. Bookly staff will never ask for your password.
+
+# Refund terms read back to the customer before they confirm (rendered by code, not by the model).
+terms:
+  refund_no_return: >-
+    Full refund of {amount} to your original payment method. You do not need to send the book back.
+    The refund usually arrives within {returns.refund_business_days} business days.
+  return_for_refund: >-
+    Refund of {amount} to your original payment method after the carrier scans your return. We will
+    email a prepaid return label, valid for {returns.label_valid_days} days.

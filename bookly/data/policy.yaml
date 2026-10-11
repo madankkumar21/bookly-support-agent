@@ -1,0 +1,27 @@
+# Bookly support policy (fictional).
+# This is the ONE place policy values live. Two consumers read it:
+#   1. bookly/policy.py  - the eligibility engine that decides refunds
+#   2. bookly/kb.py      - the policy text the agent quotes (search_policy)
+# So what the agent says about the policy cannot drift from what it does.
+# A CX lead changes a value here, then re-runs the eval suite (see README "change test").
+
+version: "2026-10-01"
+
+returns:
+  print_return_window_days: 30        # change of mind: return for refund, counted from delivery date
+  damaged_window_days: 30             # damaged or wrong item: refund without return, from delivery date
+  ebook_refund_window_days: 14        # ebooks: from purchase date, only if never downloaded
+  human_approval_over_usd: 100.00     # refunds above this (one request) need a person
+  refund_business_days: 5             # time for the refund to reach the original payment method
+  label_valid_days: 14                # prepaid return label validity
+
+shipping:
+  standard_business_days: "3-7"
+  expedited_business_days: "1-2"
+  free_standard_over_usd: 35.00
+  standard_fee_usd: 4.99
+  ships_to: "the United States and Canada"
+  lost_after_business_days_past_eta: 5   # no tracking scan this long after the estimate = treat as lost
+
+account:
+  reset_link_valid_minutes: 60

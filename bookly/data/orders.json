@@ -1,0 +1,84 @@
+{
+  "_note": "Mock Bookly order system. The clock is fixed at 2026-10-10 (bookly/config.py) so every run sees the same dates.",
+  "orders": [
+    {
+      "order_id": "BK-1001", "customer_name": "Maya Chen", "email": "maya.chen@example.com",
+      "status": "delivered", "placed_at": "2026-10-01", "shipped_at": "2026-10-02", "delivered_at": "2026-10-06",
+      "carrier": "USPS", "tracking_number": "9400100000000000001001", "eta": "2026-10-06",
+      "items": [{"item_id": "BK-1001-1", "title": "The Midnight Library", "format": "print", "price": 18.99}]
+    },
+    {
+      "order_id": "BK-1002", "customer_name": "Daniel Ortiz", "email": "dan.ortiz@example.com",
+      "status": "delivered", "placed_at": "2026-09-22", "shipped_at": "2026-09-23", "delivered_at": "2026-09-28",
+      "carrier": "UPS", "tracking_number": "1Z999AA10000001002", "eta": "2026-09-28",
+      "items": [
+        {"item_id": "BK-1002-1", "title": "Dune", "format": "print", "price": 12.99},
+        {"item_id": "BK-1002-2", "title": "Project Hail Mary", "format": "print", "price": 16.50},
+        {"item_id": "BK-1002-3", "title": "Circe", "format": "print", "price": 14.00}
+      ]
+    },
+    {
+      "order_id": "BK-1003", "customer_name": "Priya Nair", "email": "priya.nair@example.com",
+      "status": "delivered", "placed_at": "2026-09-03", "shipped_at": "2026-09-04", "delivered_at": "2026-09-09",
+      "carrier": "USPS", "tracking_number": "9400100000000000001003", "eta": "2026-09-09",
+      "items": [{"item_id": "BK-1003-1", "title": "Educated", "format": "print", "price": 15.99}]
+    },
+    {
+      "order_id": "BK-1004", "customer_name": "Sam Lee", "email": "sam.lee@example.com",
+      "status": "delivered", "placed_at": "2026-09-04", "shipped_at": "2026-09-05", "delivered_at": "2026-09-10",
+      "carrier": "USPS", "tracking_number": "9400100000000000001004", "eta": "2026-09-10",
+      "items": [{"item_id": "BK-1004-1", "title": "Klara and the Sun", "format": "print", "price": 17.25}]
+    },
+    {
+      "order_id": "BK-1005", "customer_name": "Jordan Blake", "email": "jordan.blake@example.com",
+      "status": "delivered", "placed_at": "2026-10-05", "delivered_at": "2026-10-05",
+      "items": [{"item_id": "BK-1005-1", "title": "Atomic Habits (ebook)", "format": "ebook", "price": 11.99, "downloaded": true}]
+    },
+    {
+      "order_id": "BK-1006", "customer_name": "Jordan Blake", "email": "jordan.blake@example.com",
+      "status": "delivered", "placed_at": "2026-10-02", "delivered_at": "2026-10-02",
+      "items": [{"item_id": "BK-1006-1", "title": "Thinking, Fast and Slow (ebook)", "format": "ebook", "price": 9.99, "downloaded": false}]
+    },
+    {
+      "order_id": "BK-1007", "customer_name": "Elena Rossi", "email": "elena.rossi@example.com",
+      "status": "delivered", "placed_at": "2026-09-28", "shipped_at": "2026-09-29", "delivered_at": "2026-10-03",
+      "carrier": "FedEx", "tracking_number": "770000001007", "eta": "2026-10-03",
+      "items": [{"item_id": "BK-1007-1", "title": "Harry Potter: The Complete Collection (box set)", "format": "print", "price": 129.99}]
+    },
+    {
+      "order_id": "BK-1008", "customer_name": "Marcus Webb", "email": "marcus.webb@example.com",
+      "status": "delivered", "placed_at": "2026-07-06", "shipped_at": "2026-07-07", "delivered_at": "2026-07-12",
+      "carrier": "USPS", "tracking_number": "9400100000000000001008", "eta": "2026-07-12",
+      "items": [{"item_id": "BK-1008-1", "title": "Sapiens", "format": "print", "price": 19.99}]
+    },
+    {
+      "order_id": "BK-1009", "customer_name": "Aisha Khan", "email": "aisha.khan@example.com",
+      "status": "shipped", "placed_at": "2026-10-07", "shipped_at": "2026-10-08",
+      "carrier": "USPS", "tracking_number": "9400100000000000001009", "eta": "2026-10-13", "last_scan_at": "2026-10-09",
+      "items": [{"item_id": "BK-1009-1", "title": "The Women", "format": "print", "price": 21.00}]
+    },
+    {
+      "order_id": "BK-1010", "customer_name": "Tom Becker", "email": "tom.becker@example.com",
+      "status": "delivered", "placed_at": "2026-09-14", "shipped_at": "2026-09-15", "delivered_at": "2026-09-20",
+      "carrier": "UPS", "tracking_number": "1Z999AA10000001010", "eta": "2026-09-20",
+      "items": [{"item_id": "BK-1010-1", "title": "Tomorrow, and Tomorrow, and Tomorrow", "format": "print", "price": 16.99}]
+    },
+    {
+      "order_id": "BK-1011", "customer_name": "Grace Park", "email": "grace.park@example.com",
+      "status": "delivered", "placed_at": "2026-10-01", "shipped_at": "2026-10-02", "delivered_at": "2026-10-07",
+      "carrier": "USPS", "tracking_number": "9400100000000000001011", "eta": "2026-10-07",
+      "items": [{"item_id": "BK-1011-1", "title": "Lessons in Chemistry", "format": "print", "price": 14.99}]
+    },
+    {
+      "order_id": "BK-1012", "customer_name": "Leo Martin", "email": "leo.martin@example.com",
+      "status": "processing", "placed_at": "2026-10-09",
+      "items": [{"item_id": "BK-1012-1", "title": "James", "format": "print", "price": 19.50}]
+    },
+    {
+      "order_id": "BK-1013", "customer_name": "Nina Patel", "email": "nina.patel@example.com",
+      "status": "shipped", "placed_at": "2026-09-16", "shipped_at": "2026-09-18",
+      "carrier": "USPS", "tracking_number": "9400100000000000001013", "eta": "2026-09-23", "last_scan_at": "2026-09-19",
+      "items": [{"item_id": "BK-1013-1", "title": "Fourth Wing", "format": "print", "price": 18.00}]
+    }
+  ]
+}
