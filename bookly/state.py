@@ -64,11 +64,14 @@ class Session:
         self.trace.append({"turn": self.turn, "kind": kind, **data})
 
     # ---- quotes -------------------------------------------------------------------------
-    def issue_quote(self, order_id: str, reason: str, decision: Decision, terms: str) -> Quote:
-        """A new quote voids every earlier open quote, so a confirmation can only bind to the latest terms."""
+    def void_open_quotes(self) -> None:
         for q in self.quotes.values():
             if q.status == "open":
                 q.status = "void"
+
+    def issue_quote(self, order_id: str, reason: str, decision: Decision, terms: str) -> Quote:
+        """A new quote voids every earlier open quote, so a confirmation can only bind to the latest terms."""
+        self.void_open_quotes()
         digits = order_id.split("-")[-1]
         quote = Quote(f"Q-{digits}-{next(self._quote_seq)}", order_id, reason, decision, terms)
         self.quotes[quote.quote_id] = quote

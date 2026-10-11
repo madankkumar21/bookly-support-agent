@@ -52,6 +52,7 @@ class PolicyText:
             for p in raw["passages"]
         ]
         self.terms_templates: dict[str, str] = raw["terms"]
+        self.message_templates: dict[str, str] = raw["messages"]
 
     def search(self, topic: str, limit: int = 2) -> list[Passage]:
         q = f" {(topic or '').lower()} "
@@ -63,6 +64,10 @@ class PolicyText:
                 scored.append((score, p))
         scored.sort(key=lambda sp: -sp[0])
         return [p for _, p in scored[:limit]]
+
+    def message(self, name: str, **extra: str) -> str:
+        """Fixed customer-facing messages the code sends (handoff, password reset, corrections)."""
+        return render(self.message_templates[name], self.policy, **extra)
 
     def terms(self, decision: Decision) -> str:
         """The read-back the customer confirms. Built by code from the decision, never by the model."""

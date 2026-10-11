@@ -77,3 +77,15 @@ terms:
   return_for_refund: >-
     Refund of {amount} to your original payment method after the carrier scans your return. We will
     email a prepaid return label, valid for {returns.label_valid_days} days.
+
+# Fixed messages the code sends (never written by the model).
+messages:
+  handoff: >-
+    I've passed this to a member of our team (ticket {ticket_id}). They will reply by email within
+    {support.human_reply_business_days} business day, and they will have the full details, so you will
+    not need to repeat yourself.
+  password_reset: >-
+    If there is a Bookly account for that email, a reset link is on its way. The link is valid for
+    {account.reset_link_valid_minutes} minutes.
+  claim_correction: >-
+    I want to be accurate: nothing has been refunded or returned yet.

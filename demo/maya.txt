@@ -1,0 +1,5 @@
+# Demo 1: vague complaint -> clarifying question -> verify -> eligibility in code -> confirm -> refund
+Hi, my order is messed up
+It arrived damaged
+It's BK-1001 and my email is maya.chen@example.com
+/confirm

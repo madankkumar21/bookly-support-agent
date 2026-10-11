@@ -11,7 +11,7 @@ from bookly.policy import Decision, Line, Policy
 
 def _templates():
     raw = yaml.safe_load(POLICY_TEXT_PATH.read_text())
-    return [p["text"] for p in raw["passages"]] + list(raw["terms"].values())
+    return [p["text"] for p in raw["passages"]] + list(raw["terms"].values()) + list(raw["messages"].values())
 
 
 def test_templates_contain_no_hard_coded_numbers():
