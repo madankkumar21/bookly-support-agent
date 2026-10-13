@@ -18,7 +18,7 @@ You need Python 3.12+, [uv](https://docs.astral.sh/uv/) and an Anthropic API key
 ```bash
 cp .env.example .env          # then paste your key after ANTHROPIC_API_KEY=
 uv run uvicorn app.server:app --port 8000     # web chat with the trace panel: http://localhost:8000
-uv run pytest                 # 80 tests, no API key needed, about 2 seconds
+uv run pytest                 # 81 tests, no API key needed, about 2 seconds
 ```
 
 Other entry points:
@@ -182,6 +182,6 @@ bookly/      agent.py (loop) · gate.py · state.py · tools.py · policy.py (en
 app/         server.py · static/index.html          web chat + trace panel
 cli.py       terminal chat with an inline trace; demo/ holds scripted conversations
 evals/       scenarios.yaml · simulator.py · checks.py · run_evals.py · business_case.yaml · results/
-tests/       80 tests: engine, gate, matcher, policy text, loop (scripted model), rubric, web API
+tests/       81 tests: engine, gate, matcher, policy text, loop (scripted model), rubric, web API
 docs/        BUILD_LOG.md
 ```
