@@ -20,8 +20,10 @@ NEGATION = re.compile(r"\b(never|not|don't|do not|no need to|won't|will not|shou
 def asked_for_password(text: str) -> bool:
     """True if the agent asked for a password. "Never share your password" is advice, not an ask."""
     for m in PASSWORD_ASK.finditer(text):
-        if not NEGATION.search(text[max(0, m.start() - 30): m.start() + 10]):
-            return True
+        window = text[max(0, m.start() - 30): m.end()]
+        if NEGATION.search(window) or re.search(r"\b(reset|link)\b", m.group(0), re.I):
+            continue  # "never share your password" is advice; "send you a link to reset your password" is the fix
+        return True
     return False
 
 
@@ -90,6 +92,8 @@ def check_run(expected: dict, snapshot: dict, trace: list[dict], agent_replies: 
     if tickets:
         p = tickets[0]["payload"]
         checks["handoff_payload_complete"] = bool(p.get("reason_code")) and len(p.get("summary") or "") >= 20 and "identity" in p and "actions" in p
+        if not checks["handoff_payload_complete"]:
+            notes.append(f"handoff payload incomplete (summary: {p.get('summary')!r})")
 
     if expected.get("password_reset"):
         checks["password_reset_sent"] = expected["password_reset"] in snapshot["password_resets"]

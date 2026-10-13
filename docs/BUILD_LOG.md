@@ -46,4 +46,12 @@ AI coding assistants were used throughout (Claude Code), as the brief expects. T
 | API key not scoped to a workspace (400) | The first live call | Setup | `make_client()` sends `anthropic-workspace-id` when `ANTHROPIC_WORKSPACE_ID` is set; a workspace key was used instead |
 | API credit ran out mid-way through the first change-test run; 45 runs errored and an unaffected scenario looked like it moved | The run's output | The runner | The runner stops at the first credit error and flags the run as incomplete. That output was set aside, not reported |
 
-Result after the fixes: 16 of 16 scenarios pass^5, 0 wrong refunds in 80 conversations, $0.013 per conversation.
+| The R3 check had "30" hard-coded, so it failed under the 14-day change test even though the agent correctly said "14 days" | Change test | The test | Text checks now read `{policy.key}` values from the active policy, the same rule the agent follows |
+| Two rubric false positives: "send you a link to reset your password" counted as asking for a password, and a first name taken from the customer's own email counted as a leak | Opus comparison run | The rubric | Exact-sentence tests; every saved run re-graded with `evals/rescore.py` at no API cost. The Sonnet verdicts were unchanged |
+
+Results after the fixes:
+- **Sonnet 5.5:** 16 of 16 scenarios pass^5, 0 wrong refunds in 80 conversations, $0.013 per conversation.
+- **Change test (14-day window):** only R10 moved, and 16 of 16 passed.
+- **Opus 5.5 at equal effort:** 15 of 16, with one real error (a handoff the customer declined, with a "placeholder" summary), at $0.025 per conversation.
+
+Lesson: three of the five failures the evals found were in my own checks or scenarios, not in the agent. A rubric needs the same tests as the code it grades.

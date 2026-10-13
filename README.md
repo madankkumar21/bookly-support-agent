@@ -100,7 +100,7 @@ Tool contracts (`name(inputs) → {status, …, ts}`):
 | **Ask, don't guess.** One question with buttons when the intent or the book is unclear. Two failed asks for the same field go to a person | Extra turns, so the cap is kept low | A wrong guess on a money flow is a wrong action or a repeat contact | The vague-complaint scenario asked first in 5 of 5 runs. The multi-item scenario returned the right book in 5 of 5 |
 
 Also decided, with reasons, in [docs/BUILD_LOG.md](docs/BUILD_LOG.md):
-- Sonnet 5.5 over Opus. The rules live in code, so the faster model should be enough. *(Opus comparison: pending.)*
+- Sonnet 5.5 over Opus. The rules live in code, so the faster model should be enough. Measured below: Opus gave no gain on this suite, at twice the cost.
 - State in code rather than inferred from the transcript.
 - An append-only history.
 - Keyword search instead of a vector store for nine passages.
@@ -119,7 +119,18 @@ Also decided, with reasons, in [docs/BUILD_LOG.md](docs/BUILD_LOG.md):
   1. **Retrieval.** "Shipping to Canada" missed the passage that answers it, and the agent correctly said "I don't know". The fix was search ranking, not the prompt. A regression test covers nine phrasings.
   2. **The scenario.** In one smoke run, the simulated customer went off-script and asked for a person; the agent's handoff was right. The fix was the scenario, not the check.
   3. **The guardrail.** The claim check replaced a correct "No return or refund was created" after a cancellation. That was a false block. The fix was per-clause negation, with the exact sentences as tests. After the fix the check fired in 0 of 80 conversations.
-- **Change test** *(pending)*. Cut the return window from 30 to 14 days in `policy.yaml` and re-run. Only the change-of-mind cases delivered between 15 and 30 days ago should move.
+  4. **The checker.** The Opus transcripts exposed two false positives in my rubric. "I'll send you a link to reset your password" was flagged as asking for a password. A first name taken from the customer's own email was flagged as a leak. I fixed both checks with exact-sentence tests, then re-graded every saved run with `evals/rescore.py`. The Sonnet verdicts did not change.
+- **Change test: a CX lead edits one value.** I cut the return window from 30 to 14 days in `policy.yaml` and re-ran all 80 conversations. **Only R10 moved**: a change-of-mind return delivered 20 days ago became ineligible. Every other outcome held. 16 of 16 scenarios passed under the new expectations, with 0 wrong refunds. The agent's explanations said "14 days" without a prompt edit, because its policy text renders from the same file ([report](evals/results/2026-10-13-window14/report.md)). The change test also caught a bug in my own test: one check had "30" hard-coded. Checks now read their values from the active policy too.
+- **Model comparison, the same suite at the same effort (`low`):**
+
+  | | Sonnet 5.5 (shipped) | Opus 5.5 |
+  |---|---|---|
+  | Scenarios passing all 5 runs | 16 / 16 | 15 / 16 |
+  | Wrong refunds | 0 / 80 | 0 / 80 |
+  | Cost per conversation | $0.013 | $0.025 |
+  | Turn latency p50 / p95 | 4.2 s / 8.7 s | 5.1 s / 12.8 s |
+
+  Opus's one failure was a real mistake. It handed off after the customer declined, with the summary set to "placeholder" ([report](evals/results/2026-10-13-opus-k5/report.md)). Eighty conversations do not rank the models in general. They show that on this design, the bigger model buys nothing, because the rules that matter run in code.
 - **Caveat.** These scenarios were also my development set, and the numbers come from my own synthetic customers. The first production step below fixes exactly that.
 
 ## Assumptions (Bookly is fictional)

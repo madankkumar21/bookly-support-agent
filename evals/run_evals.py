@@ -26,6 +26,7 @@ import yaml
 from bookly import config
 from bookly.agent import Agent
 from bookly.backend import Backend
+from bookly.kb import render
 from bookly.policy import Policy
 from evals.checks import check_run
 from evals.simulator import Simulator, SimulatorRefused
@@ -46,6 +47,16 @@ def expected_for(scenario: dict, overrides: dict) -> dict:
         if k in overrides and str(overrides[k]) == v:
             exp.update(alt)
     return exp
+
+
+def render_expected(exp: dict, policy: Policy) -> dict:
+    """Fill {policy.key} placeholders in text checks from the active policy (one source of truth for tests too)."""
+    out = dict(exp)
+    if "mention_all_groups" in out:
+        out["mention_all_groups"] = [[render(s, policy) for s in group] for group in out["mention_all_groups"]]
+    if "must_not_mention" in out:
+        out["must_not_mention"] = [render(s, policy) for s in out["must_not_mention"]]
+    return out
 
 
 class Budget:
@@ -93,7 +104,7 @@ def run_one(scenario: dict, run_index: int, args, overrides: dict, client: anthr
 
     budget.add(agent.usage.cost_usd + sim.cost_usd)
     snapshot = agent.backend.snapshot()
-    exp = expected_for(scenario, overrides)
+    exp = render_expected(expected_for(scenario, overrides), policy)
     result = None if error else check_run(exp, snapshot, agent.session.trace, [t["agent"] for t in turns],
                                           clarify_first=scenario.get("clarify_first", False))
     return {

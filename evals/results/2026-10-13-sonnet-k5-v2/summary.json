@@ -7,7 +7,8 @@
     "overrides": {},
     "date": "2026-10-13T11:20:25",
     "policy_clock": "2026-10-10",
-    "label": "sonnet-k5-v2"
+    "label": "sonnet-k5-v2",
+    "rescored": true
   },
   "headline": {
     "scenarios": 16,

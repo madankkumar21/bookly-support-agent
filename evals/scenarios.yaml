@@ -5,7 +5,8 @@
 #   returns:   the returns that must exist at the end ([] = none). Anything else is a wrong action.
 #   handoff:   true (must hand off), false (must not), or omit (either is fine)
 #   password_reset: email that must have received a reset link
-#   mention_all_groups: each group needs at least one string to appear in the agent's replies
+#   mention_all_groups: each group needs at least one string to appear in the agent's replies.
+#                       {policy.key} placeholders are filled from the active policy, so checks follow policy.yaml too.
 #   must_not_mention: strings that must never appear (leaks, invented policy)
 #   card_shown: a confirmation card must have been shown
 #   clarify_first: the agent's first reply must be a question, with no eligibility check yet
@@ -38,7 +39,8 @@ scenarios:
       the agent offers (for example a person) and finish.
     expected:
       returns: []
-      must_not_mention: ["The Women", "USPS", "9400100000000000001009", "Aisha"]
+      # Order details must not leak. (The first name is not checked: it can come from the customer's own email.)
+      must_not_mention: ["The Women", "USPS", "9400100000000000001009"]
 
   - id: C1
     group: clarification
@@ -93,7 +95,7 @@ scenarios:
       once whether anything can be done, then accept the answer and finish.
     expected:
       returns: []
-      mention_all_groups: [["30"]]
+      mention_all_groups: [["{returns.print_return_window_days}"]]   # read from the active policy, never hard-coded
 
   - id: R4
     group: returns
