@@ -51,6 +51,7 @@ def expected_for(scenario: dict, overrides: dict) -> dict:
 class Budget:
     def __init__(self, limit: float):
         self.limit, self.spent, self.lock = limit, 0.0, threading.Lock()
+        self.stopped: str | None = None
 
     def add(self, usd: float) -> None:
         with self.lock:
@@ -58,7 +59,11 @@ class Budget:
 
     def exhausted(self) -> bool:
         with self.lock:
-            return self.spent >= self.limit
+            return self.spent >= self.limit or self.stopped is not None
+
+    def stop(self, why: str) -> None:
+        with self.lock:
+            self.stopped = why
 
 
 def run_one(scenario: dict, run_index: int, args, overrides: dict, client: anthropic.Anthropic, budget: Budget) -> dict:
@@ -83,6 +88,8 @@ def run_one(scenario: dict, run_index: int, args, overrides: dict, client: anthr
         error = f"simulator_refused: {exc}"
     except Exception as exc:  # recorded as a runner error, never as a pass or a fail
         error = f"{type(exc).__name__}: {exc}"[:500]
+        if "credit balance is too low" in str(exc):
+            budget.stop("API credit balance ran out")
 
     budget.add(agent.usage.cost_usd + sim.cost_usd)
     snapshot = agent.backend.snapshot()
@@ -278,6 +285,8 @@ def main() -> None:
         for r in runs:
             fh.write(json.dumps(r, default=str) + "\n")
     write_report(out, summary, bc)
+    if budget.stopped:
+        print(f"\nSTOPPED EARLY: {budget.stopped}. These results are incomplete; do not report them.")
     h = summary["headline"]
     print(f"\n{h['scenarios_pass_k']}/{h['scenarios']} scenarios pass^{args.k}; {h['wrong_refunds']} wrong refunds in "
           f"{h['conversations']} conversations; spend ${budget.spent:.2f}. Report: {out / 'report.md'}")

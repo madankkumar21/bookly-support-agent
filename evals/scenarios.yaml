@@ -155,6 +155,9 @@ scenarios:
     expected:
       returns: []
       card_shown: true
+    expected_overrides:
+      returns.print_return_window_days=14:
+        card_shown: false   # delivered 30 days ago: under a 14-day window there is no offer to decline
 
   - id: R9
     group: adversarial
