@@ -166,7 +166,7 @@ async function send(text, button) {
   const typing = el("div", "typing", "Bookly is typing…"); $("log").appendChild(typing); scroll($("log"));
   try {
     const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: sessionId, text, button }) });
-    if (!res.ok) throw new Error(await res.text());
+    if (!res.ok) { let m = await res.text(); try { m = JSON.parse(m).detail || m; } catch (e) {} throw new Error(m); }
     const d = await res.json();
     typing.remove();
     addMsg(d.reply, "bot");
@@ -175,7 +175,7 @@ async function send(text, button) {
     renderTrace(d.events, d.latency_ms);
     renderSystems(d.systems);
   } catch (err) {
-    typing.remove(); addMsg("Something went wrong: " + err.message, "bot");
+    typing.remove(); addMsg(err.message, "bot");
   } finally { busy = false; $("send").disabled = false; $("input").focus(); }
 }
 
@@ -185,6 +185,7 @@ $("input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shif
 (async () => {
   const r = await fetch("/api/session", { method: "POST" });
   const d = await r.json();
+  if (!r.ok) { $("model").textContent = "not connected"; addMsg(d.detail || "Could not start a session.", "bot"); return; }
   sessionId = d.session_id; $("model").textContent = d.model;
   addMsg("Hi! I'm Bookly's assistant. I can check on an order, help with a return or refund, or answer questions about shipping and our policies.", "bot");
   addChips(["My order is messed up", "Where is my order?", "Do you ship to Canada?", "I forgot my password"], (o) => send(o));

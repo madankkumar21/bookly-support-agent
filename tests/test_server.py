@@ -32,3 +32,10 @@ def test_chat_flow_with_card_and_confirm_button():
 def test_unknown_session_is_404():
     c = TestClient(server.app)
     assert c.post("/api/chat", json={"session_id": "nope", "text": "hi"}).status_code == 404
+
+
+def test_missing_key_gives_a_clear_message(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    server.agent_factory = server.Agent
+    r = TestClient(server.app).post("/api/session")
+    assert r.status_code == 400 and "ANTHROPIC_API_KEY" in r.json()["detail"]

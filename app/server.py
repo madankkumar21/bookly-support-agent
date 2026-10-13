@@ -5,13 +5,17 @@
 
 from __future__ import annotations
 
+import os
 import threading
 from pathlib import Path
+
+import anthropic
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+from bookly import config  # noqa: F401  (loads .env)
 from bookly.agent import Agent
 
 STATIC = Path(__file__).resolve().parent / "static"
@@ -20,6 +24,7 @@ app = FastAPI(title="Bookly support agent")
 _sessions: dict[str, Agent] = {}
 _lock = threading.Lock()
 agent_factory = Agent  # tests swap this for a scripted agent
+NO_KEY = "No Anthropic API key found. Copy .env.example to .env, paste your key after ANTHROPIC_API_KEY=, and restart the server."
 
 
 class ChatIn(BaseModel):
@@ -45,6 +50,8 @@ def index() -> FileResponse:
 
 @app.post("/api/session")
 def new_session() -> dict:
+    if agent_factory is Agent and not os.getenv("ANTHROPIC_API_KEY"):
+        raise HTTPException(400, NO_KEY)
     agent = agent_factory()
     with _lock:
         _sessions[agent.session.session_id] = agent
@@ -57,7 +64,14 @@ def chat(body: ChatIn) -> dict:
     if agent is None:
         raise HTTPException(404, "unknown session; start a new one")
     button = body.button if body.button in ("confirm", "cancel") else None
-    t = agent.handle(body.text, button=button)
+    try:
+        t = agent.handle(body.text, button=button)
+    except anthropic.AuthenticationError:
+        _sessions.pop(body.session_id, None)
+        raise HTTPException(401, NO_KEY)
+    except anthropic.APIStatusError as exc:  # e.g. no credit left; the conversation cannot continue safely
+        _sessions.pop(body.session_id, None)
+        raise HTTPException(502, f"The Claude API returned an error ({exc.status_code}): {exc.message}. Refresh to start again.")
     return {
         "reply": t.reply,
         "options": t.options,
