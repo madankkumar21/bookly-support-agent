@@ -190,7 +190,8 @@ scenarios:
     resolvable: true
     opening: "How long does standard shipping take, and do you ship to Canada?"
     persona: >-
-      You are a shopper with no order yet. Once both questions are answered, thank the agent and finish.
+      You are a shopper with no order yet. Ask only these two questions; do not ask follow-up questions.
+      Once both are answered, thank the agent and finish.
     expected:
       returns: []
       handoff: false
