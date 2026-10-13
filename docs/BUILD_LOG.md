@@ -36,4 +36,14 @@ AI coding assistants were used throughout (Claude Code), as the brief expects. T
 | The password check flagged advice ("never share your password") as asking for one | A unit test on the rubric | Ignore matches with a negation just before them |
 | The preview server could not use port 8765 (another local process) | Starting the UI preview | Moved the dev-only UI preview to another port |
 
-_Live-run findings are added below after the first eval runs._
+## What the live runs found (2026-10-13)
+
+| What broke | How it was found | Owning layer | Fix |
+|---|---|---|---|
+| "Do you ship to Canada?" retrieved shipping times and costs, not the regions passage. The agent correctly said it did not know | Demo 3, the first live run | Retrieval | Light stemming, and keywords that few passages share count for more. A regression test covers nine phrasings |
+| The simulated customer in P1 went off-script (asked about Canada shipping cost), then asked for a person. The agent's handoff was correct | Smoke run, 15 of 16 | The scenario | Persona limited to its two questions. The check was not loosened |
+| The claim check replaced a correct "No return or refund was created" after a cancellation: a false block by my own guardrail | k=5 run, R8 failed 1 of 5 | The guardrail | Negation cancels a claim, judged per clause. The exact sentences are now tests. It then fired in 0 of 80 conversations |
+| API key not scoped to a workspace (400) | The first live call | Setup | `make_client()` sends `anthropic-workspace-id` when `ANTHROPIC_WORKSPACE_ID` is set; a workspace key was used instead |
+| API credit ran out mid-way through the first change-test run; 45 runs errored and an unaffected scenario looked like it moved | The run's output | The runner | The runner stops at the first credit error and flags the run as incomplete. That output was set aside, not reported |
+
+Result after the fixes: 16 of 16 scenarios pass^5, 0 wrong refunds in 80 conversations, $0.013 per conversation.
