@@ -33,8 +33,8 @@ Model `claude-opus-5-5` (effort low), simulated customer `claude-haiku-5-5`, k=5
 | P2 | policy | Question the policy does not cover (H11) | 4/5 | ❌ | handoff payload incomplete (summary: 'placeholder') |
 | P3 | policy | Password reset, never asks for the password (H12) | 5/5 | ✅ |  |
 
-## Business case (illustrative, not a forecast)
-- Formula: contacts/month × share(status+returns) × resolution rate × (human cost − AI cost per conversation).
-- Measured here: resolution rate on synthetic scenarios 100% (proves the method, not Bookly's number); AI cost per conversation $0.0249.
-- Assumed (replace in discovery): 20,000 contacts/month, 50% status+returns, $6.00 per human contact.
-- Illustrative monthly saving: $59,751. Guardrail alongside it: 0 wrong refunds.
+## Business case: a formula, not a forecast
+- monthly saving = Bookly's contacts/month × share that are order status or returns × resolution rate × (Bookly's cost per human contact − AI cost per conversation).
+- Measured here: AI cost per conversation $0.0249 (estimated from token usage at list prices, agent only); resolution rate on synthetic scenarios 100% (proves the method, not Bookly's number).
+- Bookly supplies: contacts per month; share that are order status or returns; cost per human contact; the real resolution rate, from a golden set of its own tickets.
+- Guardrail: wrong refunds, reported next to any saving (0 in this run).

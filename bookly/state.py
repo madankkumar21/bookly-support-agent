@@ -106,6 +106,8 @@ class Session:
             lines.append("- The customer CONFIRMED the latest quote on the confirmation card. You may call create_return with that quote_id.")
         elif self.last_confirmation_signal == "decline":
             lines.append("- The customer DECLINED the latest quote. Do not create a return. Offer alternatives or a person.")
+        elif self.last_confirmation_signal == "stale_card":
+            lines.append("- The customer pressed a button on an OLDER card. Nothing was confirmed. Ask them to use the latest card.")
         elif self.last_confirmation_signal == "unclear":
             lines.append("- The customer's reply did not clearly confirm or decline. Ask them to use the Confirm or Cancel button.")
         if self.actions:

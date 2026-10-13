@@ -199,18 +199,5 @@
       "errors": 0,
       "notes": []
     }
-  ],
-  "business_case": {
-    "measured": {
-      "resolution_rate_on_synthetic_scenarios": 0.875,
-      "ai_cost_per_conversation_usd": 0.0178
-    },
-    "assumed": {
-      "contacts_per_month": 20000,
-      "share_status_and_returns": 0.5,
-      "cost_per_human_contact_usd": 6.0
-    },
-    "illustrative_monthly_saving_usd": 52344.0,
-    "formula": "contacts/month \u00d7 share(status+returns) \u00d7 resolution rate \u00d7 (human cost \u2212 AI cost per conversation)"
-  }
+  ]
 }

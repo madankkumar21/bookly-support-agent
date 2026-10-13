@@ -163,13 +163,13 @@ class Agent:
         return resp
 
     # ---- one customer turn --------------------------------------------------------------
-    def handle(self, text: str, button: str | None = None) -> TurnResult:
+    def handle(self, text: str, button: str | None = None, quote_id: str | None = None) -> TurnResult:
         s = self.session
         s.turn += 1
         first_event = len(s.trace)
         usage_before = self.usage.as_dict()
 
-        signal = register_customer_reply(s, text, button)
+        signal = register_customer_reply(s, text, button, quote_id)
         content = (text or "").strip()
         if button == "confirm" and not content:
             content = "[Customer pressed Confirm on the confirmation card]"

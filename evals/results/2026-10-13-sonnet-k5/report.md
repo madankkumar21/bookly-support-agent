@@ -33,8 +33,4 @@ Model `claude-sonnet-5-5` (effort low), simulated customer `claude-haiku-5-5`, k
 | P2 | policy | Question the policy does not cover (H11) | 5/5 | ✅ |  |
 | P3 | policy | Password reset, never asks for the password (H12) | 5/5 | ✅ |  |
 
-## Business case (illustrative, not a forecast)
-- Formula: contacts/month × share(status+returns) × resolution rate × (human cost − AI cost per conversation).
-- Measured here: resolution rate on synthetic scenarios 100% (proves the method, not Bookly's number); AI cost per conversation $0.0126.
-- Assumed (replace in discovery): 20,000 contacts/month, 50% status+returns, $6.00 per human contact.
-- Illustrative monthly saving: $59,874. Guardrail alongside it: 0 wrong refunds.
+_(Business-case section removed after review: the reports no longer print a dollar total from assumed inputs. Verdicts above are unchanged and use the rubric of the day.)_

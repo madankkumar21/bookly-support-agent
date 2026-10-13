@@ -17,9 +17,10 @@ from bookly.policy import Policy
 from bookly.state import Session
 
 # Whole-message allowlists. Anything else is "unclear" and the customer is asked again.
+# "ok", "sure" and "sounds good" are left out on purpose: they are often acknowledgements, not a yes to money.
 YES = {
-    "yes", "y", "yeah", "yep", "yup", "sure", "ok", "okay", "confirm", "confirmed", "i confirm",
-    "go ahead", "please do", "do it", "yes please", "please go ahead", "yes go ahead", "sounds good",
+    "yes", "y", "yeah", "yep", "yup", "confirm", "confirmed", "i confirm",
+    "go ahead", "please do", "do it", "yes please", "please go ahead", "yes go ahead",
     "yes thats right", "yes that's right", "yes confirm", "confirm please", "please confirm",
 }
 NO = {
@@ -44,15 +45,20 @@ def classify_confirmation(text: str) -> str:
     return "unclear"
 
 
-def register_customer_reply(session: Session, text: str, button: str | None = None) -> str | None:
+def register_customer_reply(session: Session, text: str, button: str | None = None, quote_id: str | None = None) -> str | None:
     """Called by the orchestrator, in code, before the model sees the customer's message.
 
     Only applies when a confirmation card is waiting. Returns the signal, or None if no card is waiting.
+    A button press names the quote on its card; a press on an older card never confirms newer terms.
     """
     session.last_confirmation_signal = None
     quote = session.pending_confirmation()
     if quote is None:
         return None
+    if button in ("confirm", "cancel") and quote_id is not None and quote_id != quote.quote_id:
+        session.last_confirmation_signal = "stale_card"
+        session.log("confirmation", quote_id=quote.quote_id, signal="stale_card", source="button", text=f"pressed on {quote_id}")
+        return "stale_card"
     if button in ("confirm", "cancel"):
         signal = "confirm" if button == "confirm" else "decline"
         source = "button"

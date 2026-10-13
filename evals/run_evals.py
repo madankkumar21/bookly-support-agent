@@ -197,17 +197,19 @@ def summarize(scenarios: list[dict], runs: list[dict], args, overrides: dict) ->
 
 
 def business_case(summary: dict) -> dict:
-    a = yaml.safe_load((HERE / "business_case.yaml").read_text())["assumed"]
+    """The business case as a formula, not a forecast: this build measures the AI cost and proves the
+    method; Bookly supplies its own volume, mix, human cost and (from a golden set) the real resolution rate."""
     res_num, res_den = (int(x) for x in summary["headline"]["resolved_without_human"].split("/"))
-    resolution = res_num / res_den if res_den else 0.0
-    ai_cost = summary["operations"]["agent_cost_per_conversation_usd"] or 0.0
-    contacts = a["contacts_per_month"] * a["share_status_and_returns"]
-    saving = contacts * resolution * (a["cost_per_human_contact_usd"] - ai_cost)
     return {
-        "measured": {"resolution_rate_on_synthetic_scenarios": round(resolution, 3), "ai_cost_per_conversation_usd": ai_cost},
-        "assumed": a,
-        "illustrative_monthly_saving_usd": round(saving, 0),
-        "formula": "contacts/month × share(status+returns) × resolution rate × (human cost − AI cost per conversation)",
+        "formula": "monthly saving = Bookly's contacts/month × share that are order status or returns × resolution rate "
+                   "× (Bookly's cost per human contact − AI cost per conversation)",
+        "measured": {
+            "ai_cost_per_conversation_usd": summary["operations"]["agent_cost_per_conversation_usd"],
+            "resolution_rate_on_synthetic_scenarios": round(res_num / res_den, 3) if res_den else None,
+        },
+        "bookly_supplies": ["contacts per month", "share that are order status or returns", "cost per human contact",
+                            "the real resolution rate, from a golden set of its own tickets"],
+        "guardrail": "wrong refunds, reported next to any saving",
     }
 
 
@@ -242,13 +244,13 @@ def write_report(out: Path, summary: dict, bc: dict) -> None:
                      f"{' (+' + str(r['errors']) + ' err)' if r['errors'] else ''} | {'✅' if r['pass_k'] else '❌'} | {'; '.join(r['notes'])[:200]} |")
     lines += [
         "",
-        "## Business case (illustrative, not a forecast)",
-        f"- Formula: {bc['formula']}.",
-        f"- Measured here: resolution rate on synthetic scenarios {bc['measured']['resolution_rate_on_synthetic_scenarios']:.0%} "
-        f"(proves the method, not Bookly's number); AI cost per conversation ${bc['measured']['ai_cost_per_conversation_usd']}.",
-        f"- Assumed (replace in discovery): {bc['assumed']['contacts_per_month']:,} contacts/month, "
-        f"{bc['assumed']['share_status_and_returns']:.0%} status+returns, ${bc['assumed']['cost_per_human_contact_usd']:.2f} per human contact.",
-        f"- Illustrative monthly saving: ${bc['illustrative_monthly_saving_usd']:,.0f}. Guardrail alongside it: {h['wrong_refunds']} wrong refunds.",
+        "## Business case: a formula, not a forecast",
+        f"- {bc['formula']}.",
+        f"- Measured here: AI cost per conversation ${bc['measured']['ai_cost_per_conversation_usd']} "
+        "(estimated from token usage at list prices, agent only); resolution rate on synthetic scenarios "
+        f"{bc['measured']['resolution_rate_on_synthetic_scenarios']:.0%} (proves the method, not Bookly's number).",
+        f"- Bookly supplies: {'; '.join(bc['bookly_supplies'])}.",
+        f"- Guardrail: {bc['guardrail']} ({h['wrong_refunds']} in this run).",
     ]
     (out / "report.md").write_text("\n".join(lines) + "\n")
 

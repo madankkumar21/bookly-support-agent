@@ -31,6 +31,7 @@ class ChatIn(BaseModel):
     session_id: str
     text: str = ""
     button: str | None = None
+    quote_id: str | None = None  # the quote on the card whose button was pressed
 
 
 def _public_event(e: dict) -> dict:
@@ -65,7 +66,7 @@ def chat(body: ChatIn) -> dict:
         raise HTTPException(404, "unknown session; start a new one")
     button = body.button if body.button in ("confirm", "cancel") else None
     try:
-        t = agent.handle(body.text, button=button)
+        t = agent.handle(body.text, button=button, quote_id=body.quote_id if button else None)
     except anthropic.AuthenticationError:
         _sessions.pop(body.session_id, None)
         raise HTTPException(401, NO_KEY)

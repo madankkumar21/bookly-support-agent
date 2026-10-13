@@ -95,6 +95,8 @@ function addChips(options, onPick) {
 }
 
 function addCard(c) {
+  // Only the newest card is live: older cards are disabled so they can never confirm newer terms.
+  document.querySelectorAll(".card button").forEach((b) => { b.disabled = true; });
   const card = el("div", "card");
   card.appendChild(el("h3", null, "Please confirm"));
   card.appendChild(el("div", "row", `${c.items.join(", ")} · ${c.reason}`));
@@ -102,7 +104,7 @@ function addCard(c) {
   card.appendChild(el("div", "terms", c.terms));
   const yes = el("button", "btn primary", "Confirm"), no = el("button", "btn ghost", "Cancel");
   yes.type = no.type = "button";
-  const done = (button) => { yes.disabled = no.disabled = true; send("", button); };
+  const done = (button) => { yes.disabled = no.disabled = true; send("", button, c.quote_id); };
   yes.onclick = () => done("confirm"); no.onclick = () => done("cancel");
   card.appendChild(yes); card.appendChild(no);
   $("log").appendChild(card); scroll($("log"));
@@ -158,14 +160,14 @@ function renderSystems(s) {
   s.password_resets.forEach((e) => box.appendChild(el("div", "rec", `Password reset link sent · ${e}`)));
 }
 
-async function send(text, button) {
+async function send(text, button, quoteId) {
   if (busy || !sessionId) return;
   if (!text.trim() && !button) return;
   busy = true; $("send").disabled = true;
   addMsg(button ? (button === "confirm" ? "✓ Confirmed" : "✕ Cancelled") : text, "me");
   const typing = el("div", "typing", "Bookly is typing…"); $("log").appendChild(typing); scroll($("log"));
   try {
-    const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: sessionId, text, button }) });
+    const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: sessionId, text, button, quote_id: quoteId || null }) });
     if (!res.ok) { let m = await res.text(); try { m = JSON.parse(m).detail || m; } catch (e) {} throw new Error(m); }
     const d = await res.json();
     typing.remove();

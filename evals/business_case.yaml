@@ -1,9 +1,0 @@
-# Business-case inputs for the illustrative ROI line in the eval report.
-# Every value here is an ASSUMPTION for a fictional bookstore, to be replaced with Bookly's real
-# numbers in discovery. The eval measures only two inputs itself: the resolution rate on synthetic
-# scenarios (which proves the method, not Bookly's number) and the AI cost per conversation.
-
-assumed:
-  contacts_per_month: 20000            # Bookly's monthly support contacts (assumption)
-  share_status_and_returns: 0.5        # share that are order status or returns (assumption)
-  cost_per_human_contact_usd: 6.00     # loaded cost of one human-handled chat (assumption)

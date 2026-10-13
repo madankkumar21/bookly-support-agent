@@ -20,7 +20,7 @@ def quote_for(session, backend, policy, today, order_id, reason, item_ids=None, 
 
 
 # ---- the confirmation matcher (H14) --------------------------------------------------------
-@pytest.mark.parametrize("text", ["yes", "Yes!", "yeah", "go ahead", "Please do.", "confirm", "OK"])
+@pytest.mark.parametrize("text", ["yes", "Yes!", "yeah", "go ahead", "Please do.", "confirm"])
 def test_clear_yes_confirms(text):
     assert classify_confirmation(text) == "confirm"
 
@@ -137,3 +137,19 @@ def test_ineligible_quote_is_blocked_even_if_confirmed(backend, policy, today):
 
 def test_unknown_quote_is_blocked(backend, policy, today):
     assert check_create_return(Session(), backend, policy, "Q-0000-1").reason == "unknown_quote"
+
+
+@pytest.mark.parametrize("text", ["ok", "Okay.", "sure", "sounds good"])
+def test_acknowledgements_are_not_a_yes_to_money(text):
+    """From review of the R8 transcripts: after an unclear cancel, a typed "ok" would have released the refund."""
+    assert classify_confirmation(text) == "unclear"
+
+
+def test_button_on_an_older_card_never_confirms_newer_terms(backend, policy, today):
+    s = Session()
+    old = quote_for(s, backend, policy, today, "BK-1002", "changed_mind", ["BK-1002-1"])
+    new = quote_for(s, backend, policy, today, "BK-1002", "changed_mind", ["BK-1002-1", "BK-1002-2"])
+    assert register_customer_reply(s, "", button="confirm", quote_id=old.quote_id) == "stale_card"
+    assert check_create_return(s, backend, policy, new.quote_id).reason == "awaiting_customer_confirmation"
+    assert register_customer_reply(s, "", button="confirm", quote_id=new.quote_id) == "confirm"
+    assert check_create_return(s, backend, policy, new.quote_id).allowed
