@@ -146,3 +146,21 @@ def test_step_limit_hands_off_and_keeps_history_valid():
     assert agent.session.handoff is not None
     assert agent.messages[-1]["role"] == "assistant"
     assert "ticket" in t.reply
+
+
+def test_claim_check_ignores_negated_sentences():
+    """Regression from the first k=5 run: correct replies after a cancel were replaced by the correction."""
+    from bookly.agent import unbacked_claim
+    from bookly.state import Session
+
+    s = Session()
+    for ok in [
+        "Your cancellation went through, Sam. No return or refund was created, and the book is yours to keep.",
+        "The return is cancelled, so nothing was created or refunded.",
+        "I haven't created a return or a refund.",
+        "Once you confirm, the refund will be issued.",
+    ]:
+        assert not unbacked_claim(ok, s), ok
+    for bad in ["I've processed your refund of $18.99.", "Your refund has been issued.", "The return label was emailed to you.",
+                "Your refund has been issued, and there's no need to send it back."]:
+        assert unbacked_claim(bad, s), bad

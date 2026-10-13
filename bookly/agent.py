@@ -43,6 +43,8 @@ CLAIM_DONE = re.compile(
     re.I,
 )
 CLAIM_NOT_YET = re.compile(r"\b(once|after you|if you|when you|will|would|can|could|as soon as|until)\b", re.I)
+# "No return or refund was created" is the opposite of a claim. Found as a false block in the first k=5 run.
+CLAIM_NEGATED = re.compile(r"\b(no|not|nothing|never|neither|nor|haven't|hasn't|hadn't|didn't|wasn't|weren't|isn't|aren't|cancel\w*)\b", re.I)
 
 
 def build_system_prompt() -> str:
@@ -57,8 +59,12 @@ def unbacked_claim(reply: str, session: Session) -> bool:
     if any(a.kind == "return_created" for a in session.actions):
         return False
     for sentence in re.split(r"(?<=[.!?])\s+", reply):
-        if CLAIM_OBJECT.search(sentence) and CLAIM_DONE.search(sentence) and not CLAIM_NOT_YET.search(sentence):
-            return True
+        if CLAIM_NOT_YET.search(sentence):
+            continue
+        # Judge each clause on its own, so "issued, and there's no need to send it back" still counts.
+        for clause in re.split(r"[,;:]|\b(?:and|so|but)\b", sentence):
+            if CLAIM_OBJECT.search(clause) and CLAIM_DONE.search(clause) and not CLAIM_NEGATED.search(clause):
+                return True
     return False
 
 
