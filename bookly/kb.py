@@ -16,6 +16,22 @@ from bookly.config import POLICY_TEXT_PATH
 from bookly.policy import Decision, Policy
 
 PLACEHOLDER = re.compile(r"\{([a-z_]+(?:\.[a-z_]+)+)\}")
+STOPWORDS = {"a", "an", "the", "do", "does", "you", "your", "i", "my", "is", "it", "to", "of", "for", "and", "or", "on", "in", "can", "how", "what"}
+
+
+def _stem(word: str) -> str:
+    for suffix in ("ing", "ed", "es", "ly", "s"):
+        if word.endswith(suffix) and len(word) - len(suffix) >= 3:
+            word = word[: -len(suffix)]
+            break
+    if len(word) > 3 and word[-1] == word[-2]:  # shipp -> ship
+        word = word[:-1]
+    return word
+
+
+def _stems(text: str) -> list[str]:
+    words = re.findall(r"[a-z']+", (text or "").lower())
+    return [_stem(w) for w in words if w not in STOPWORDS]
 
 
 def _fmt(key: str, value: object) -> str:
@@ -51,15 +67,26 @@ class PolicyText:
             Passage(p["id"], p["title"], tuple(k.lower() for k in p["keywords"]), render(p["text"], policy))
             for p in raw["passages"]
         ]
+        self._keyword_stems = {
+            p.id: {tuple(_stems(k)) for k in (*p.keywords, p.title) if _stems(k)} for p in self.passages
+        }
+        self._df: dict[tuple, int] = {}
+        for kws in self._keyword_stems.values():
+            for kw in kws:
+                self._df[kw] = self._df.get(kw, 0) + 1
         self.terms_templates: dict[str, str] = raw["terms"]
         self.message_templates: dict[str, str] = raw["messages"]
 
-    def search(self, topic: str, limit: int = 2) -> list[Passage]:
-        q = f" {(topic or '').lower()} "
+    def search(self, topic: str, limit: int = 3) -> list[Passage]:
+        """Keyword search with light stemming. A keyword that few passages share counts for more,
+        so "shipping to Canada" ranks the regions passage above the generic shipping ones."""
+        query = set(_stems(topic))
         scored = []
         for p in self.passages:
-            score = sum(2 if " " in k else 1 for k in p.keywords if k in q)
-            score += sum(1 for w in p.title.lower().split() if len(w) > 3 and f" {w} " in q)
+            score = 0.0
+            for kw in self._keyword_stems[p.id]:
+                if set(kw) <= query:
+                    score += 1.0 / self._df[kw]
             if score > 0:
                 scored.append((score, p))
         scored.sort(key=lambda sp: -sp[0])

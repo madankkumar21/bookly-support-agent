@@ -38,6 +38,24 @@ def test_search_finds_grounded_passages(policy_text):
     assert policy_text.search("what is your return policy")[0].id == "returns-print"
 
 
+def test_search_ranks_the_specific_passage_first(policy_text):
+    """Regression: the first live run asked "shipping to Canada" and got shipping times and costs, not regions."""
+    cases = {
+        "shipping to Canada": "shipping-regions",
+        "do you ship internationally": "shipping-regions",
+        "how long does standard shipping take": "shipping-times",
+        "how much is shipping": "shipping-costs",
+        "my package never arrived": "shipping-lost",
+        "ebook refund": "returns-ebook",
+        "book arrived damaged": "returns-damaged",
+        "reset my password": "account-password",
+        "when will I get my refund": "refunds-timing",
+    }
+    for topic, expected in cases.items():
+        hits = [p.id for p in policy_text.search(topic)]
+        assert hits and hits[0] == expected, (topic, hits)
+
+
 def test_search_returns_nothing_for_unsupported_topics(policy_text):
     assert policy_text.search("do you price match Amazon") == []
     assert policy_text.search("gift wrapping options") == []

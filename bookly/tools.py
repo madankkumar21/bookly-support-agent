@@ -116,6 +116,11 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def _human(d: date | None) -> str | None:
+    """Dates the way a person says them: 'Tuesday, October 13'."""
+    return f"{d:%A}, {d:%B} {d.day}" if d else None
+
+
 def _business_days_between(start: date, end: date) -> int:
     days, d = 0, start
     while d < end:
@@ -185,6 +190,8 @@ class Toolbox:
                 "carrier": order.carrier,
                 "tracking_number": order.tracking_number,
                 "estimated_delivery": order.eta.isoformat() if order.eta else None,
+                "dates_for_customer": {"today": _human(today), "shipped": _human(order.shipped_at),
+                                       "delivered": _human(order.delivered_at), "estimated_delivery": _human(order.eta)},
                 "days_since_delivery": (today - order.delivered_at).days if order.delivered_at else None,
                 "likely_lost": likely_lost,
                 "items": [
