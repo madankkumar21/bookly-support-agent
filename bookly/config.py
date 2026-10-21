@@ -44,5 +44,4 @@ def make_client(timeout: float = 90, max_retries: int = 2):
 
 # Loop limits.
 MAX_TOOL_STEPS_PER_TURN = 6
-MAX_CUSTOMER_TURNS = 14
 MAX_NEEDS_INPUT_PER_FIELD = 2  # after this many unanswered asks for one field, hand off

@@ -52,7 +52,7 @@ Several were sharpened by independent reviews of my plan before I built anything
 
 Results after the fixes:
 - **Sonnet 5.5:** 16 of 16 scenarios pass^5, 0 wrong refunds in 80 conversations, $0.013 per conversation.
-- **Change test (14-day window):** R10 and R8 moved, both as predicted; nothing else moved; 16 of 16 passed.
+- **Change test (14-day window):** R10 and R8 changed outcome, both as predicted; no other outcome changed; 16 of 16 passed.
 - **Opus 5.5 at equal effort:** 15 of 16, with one real error (a handoff the customer declined, with a "placeholder" summary), at $0.025 per conversation.
 
 Lesson: three of the five failures the evals found were in my own checks or scenarios, not in the agent. A rubric needs the same tests as the code it grades.

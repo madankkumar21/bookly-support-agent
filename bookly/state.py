@@ -40,7 +40,7 @@ class Quote:
 
 @dataclass
 class Action:
-    kind: str  # return_created | password_reset_sent | handoff
+    kind: str  # return_created | password_reset_requested | handoff
     ref: str
     detail: dict
 
