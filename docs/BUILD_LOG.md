@@ -64,7 +64,7 @@ Lesson: three of the five failures the evals found were in my own checks or scen
 |---|---|---|
 | The README said only R10 moved in the change test. R8 moved too, exactly as the suite predicted | The write-up | Reworded: two scenarios moved, both ones a 14-day window should move |
 | "0 wrong refunds in 80" did not say that in 50 of the 80 the engine made a refund impossible, or that the gate never had to block a write live | The write-up | The README now splits the 80 and says the gate's blocking paths are proven by unit tests |
-| "ok", "okay", "sure" and "sounds good" counted as a yes to money. In one R8 run, a typed "ok" after an unclear cancel would have released a refund | The gate | Removed from the allowlist, with tests. No reported run used them, so no verdict changes |
+| "ok", "okay", "sure" and "sounds good" counted as a yes to money. In two R8 runs a typed decline was read as unclear and the card stayed open; under that allowlist, a following "ok" would have released a refund. No run typed one | The gate | Removed from the allowlist, with tests. No reported run used them, so no verdict changes |
 | The Confirm button was not bound to its card. A click on an older card would confirm the newest terms | The gate and the UI | Each button sends its card's `quote_id`; a mismatch is "stale_card" and confirms nothing; older cards are disabled. Tests added |
 | The eval reports printed an illustrative dollar saving from assumed inputs | The report | Removed. The report shows the formula, the measured AI cost, and what Bookly supplies |
 
