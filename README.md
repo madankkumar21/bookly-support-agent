@@ -140,7 +140,7 @@ Also decided, with reasons, in [docs/BUILD_LOG.md](docs/BUILD_LOG.md):
 1. **Before more code: a golden set from Bookly's real return and order-status tickets, and a rubric agreed with their CX lead.** Synthetic customers test my assumptions, not Bookly's customers.
 2. **The first code change: take the reason out of the model's hands.** The customer would pick the reason on the card, as structured buttons. The reason is the one money-relevant choice the model still makes.
 
-How I would run this as a POV for Bookly: exit criteria, rollout, business case as a formula and line of sight, in [docs/BOOKLY_POV.md](docs/BOOKLY_POV.md).
+How I would run this as a POV for Bookly: exit criteria signed before the build, with what this prototype already shows against each one, the commands Bookly’s own team runs, the rollout and the business case as a formula, in [docs/BOOKLY_EVALUATION_PLAN.md](docs/BOOKLY_EVALUATION_PLAN.md).
 
 ## Assumptions (Bookly is fictional)
 
@@ -171,5 +171,5 @@ app/         server.py · static/index.html          web chat + trace panel
 cli.py       terminal chat with an inline trace; demo/ holds scripted conversations
 evals/       scenarios.yaml · simulator.py · checks.py · run_evals.py · rescore.py · results/
 tests/       86 tests: engine, gate, matcher, policy text, loop (scripted model), rubric, web API
-docs/        BUILD_LOG.md · MODEL_COMPARISON.md · BOOKLY_POV.md
+docs/        BUILD_LOG.md · MODEL_COMPARISON.md · BOOKLY_EVALUATION_PLAN.md
 ```
