@@ -127,11 +127,11 @@ Also decided, with reasons, in [docs/BUILD_LOG.md](docs/BUILD_LOG.md):
   4. **The checker.** The change test exposed a check with "30" hard-coded; checks now read values from the active policy. The Opus transcripts exposed two more false positives in my rubric. I fixed each with exact-sentence tests, then re-graded every saved run with `evals/rescore.py`. The Sonnet verdicts did not change.
 
   Three of the five failures were in my own checks or scenarios, not in the agent.
-- **Change test: a CX lead edits one value.** I cut the change-of-mind return window from 30 to 14 days in `policy.yaml` and re-ran all 80 conversations ([report](evals/results/2026-10-13-window14/report.md)). Two scenarios moved, both ones a 14-day window should move:
+- **Change test: a CX lead edits one value.** I set one policy value, the change-of-mind return window, from 30 to 14 days (`run_evals.py --override returns.print_return_window_days=14`, which changes only that value from `policy.yaml`) and re-ran all 80 conversations ([report](evals/results/2026-10-13-window14/report.md)). Two refund outcomes changed, both ones a 14-day window should change:
   - **R10** (delivered 20 days ago): a return became ineligible.
   - **R8** (delivered 30 days ago): there was no longer an offer to decline. In 5 of 5 runs the agent explained the 14-day rule and offered a person.
 
-  No other scenario's outcome changed. 16 of 16 passed under the new expectations, with 0 wrong refunds. The agent said "14 days" without a prompt edit, because its policy text renders from the same file.
+  No other refund or offer changed; how often customers accepted a person varied from run to run, as it does in the base run. 16 of 16 passed under the new expectations, with 0 wrong refunds. The agent said "14 days" without a prompt edit, because its policy text renders from the same file.
 - **Model choice.** Opus 5.5 at the same effort passed 15 of 16, at twice the cost and with slower turns. Sonnet already scored 16 of 16, so this suite has no headroom for a bigger model to show a gain. The comparison shows the cheaper model is enough on this design, not that one model is better ([details](docs/MODEL_COMPARISON.md)).
 - **Caveat.** These scenarios were also my development set, and the customers are my own synthetic personas. The first change below fixes exactly that.
 
