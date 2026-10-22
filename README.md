@@ -10,7 +10,7 @@
 - 40 of 40 runs in the resolvable scenarios ended without a human, with cooperative synthetic customers. That is a smoke number, not a deflection rate.
 - **About $0.013 per conversation** (estimated from token usage at list prices, agent only). Turn latency: p50 4.2 s, p95 8.7 s.
 
-Report and every transcript: [evals/results/2026-10-13-sonnet-k5-v2/](evals/results/2026-10-13-sonnet-k5-v2/report.md). You can read the evidence without an API key.
+Report and every transcript: [evals/results/2026-10-13-sonnet-k5-v2/](evals/results/2026-10-13-sonnet-k5-v2/report.md). You can read the evidence without an API key. A 2-minute screen recording of the two demo customers accompanies this submission.
 
 ---
 
