@@ -162,5 +162,6 @@ def test_claim_check_ignores_negated_sentences():
     ]:
         assert not unbacked_claim(ok, s), ok
     for bad in ["I've processed your refund of $18.99.", "Your refund has been issued.", "The return label was emailed to you.",
-                "Your refund has been issued, and there's no need to send it back."]:
+                "Your refund has been issued, and there's no need to send it back.",
+                "Your refund has been issued and you can expect it in 5 days."]:  # a "can" in the second clause excuses nothing
         assert unbacked_claim(bad, s), bad

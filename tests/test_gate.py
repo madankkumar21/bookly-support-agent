@@ -139,6 +139,27 @@ def test_unknown_quote_is_blocked(backend, policy, today):
     assert check_create_return(Session(), backend, policy, "Q-0000-1").reason == "unknown_quote"
 
 
+def test_item_returned_under_another_quote_is_blocked(backend, policy, today):
+    """A return recorded between the quote and the write (another channel, a retry under a new quote) blocks it."""
+    s = Session()
+    q = quote_for(s, backend, policy, today, "BK-1001", "damaged")
+    register_customer_reply(s, "", button="confirm", quote_id=q.quote_id)
+    backend.record_return(quote_id="Q-other", order_id="BK-1001", item_ids=["BK-1001-1"], reason="damaged",
+                          resolution="refund_no_return", amount=18.99)
+    assert check_create_return(s, backend, policy, q.quote_id).reason == "already_returned"
+
+
+def test_gate_recheck_of_the_approval_cap(backend, policy, today):
+    """Defence in depth: even a refundable, confirmed quote is blocked if its amount is over the cap."""
+    from dataclasses import replace
+
+    s = Session()
+    q = quote_for(s, backend, policy, today, "BK-1001", "damaged")
+    register_customer_reply(s, "", button="confirm", quote_id=q.quote_id)
+    q.decision = replace(q.decision, amount=policy.approval_cap + 0.01)
+    assert check_create_return(s, backend, policy, q.quote_id).reason == "needs_human_approval"
+
+
 @pytest.mark.parametrize("text", ["ok", "Okay.", "sure", "sounds good"])
 def test_acknowledgements_are_not_a_yes_to_money(text):
     """From review of the R8 transcripts: after an unclear cancel, a typed "ok" would have released the refund."""

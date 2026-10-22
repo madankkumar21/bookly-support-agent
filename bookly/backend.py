@@ -85,7 +85,7 @@ class Backend:
     today: date = TODAY
 
     @classmethod
-    def load(cls, path: Path = ORDERS_PATH, today: date = TODAY) -> "Backend":
+    def load(cls, path: Path = ORDERS_PATH, today: date = TODAY) -> Backend:
         raw = json.loads(Path(path).read_text())
         orders: dict[str, Order] = {}
         for o in raw["orders"]:
@@ -127,10 +127,6 @@ class Backend:
             return None
         return order
 
-    def known_email(self, email: str) -> bool:
-        e = (email or "").strip().lower()
-        return any(o.email == e for o in self.orders.values())
-
     # ---- returns ledger -----------------------------------------------------------------
     def returned_item_ids(self, order_id: str) -> dict[str, str]:
         """item_id -> rma_id for items that already have a return."""
@@ -169,8 +165,9 @@ class Backend:
 
     # ---- account and helpdesk -----------------------------------------------------------
     def send_password_reset(self, email: str) -> None:
-        if self.known_email(email):
-            self.password_resets.append(email.strip().lower())
+        """Record every request. A real mailer sends a link only to accounts that exist; recording all of
+        them keeps the record from revealing which emails have accounts."""
+        self.password_resets.append(email.strip().lower())
 
     def create_ticket(self, reason_code: str, payload: dict) -> Ticket:
         ticket = Ticket(ticket_id=f"T-{len(self.tickets) + 1:04d}", reason_code=reason_code, payload=payload)

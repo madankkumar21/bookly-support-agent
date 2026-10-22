@@ -94,8 +94,6 @@ def check_create_return(session: Session, backend: Backend, policy: Policy, quot
     if quote.quote_id != session.latest_quote_id or quote.status == "void":
         reason = "customer_declined" if quote.confirmation == "declined" else "stale_quote"
         return GateResult(False, "blocked", reason)
-    if quote.status != "open":
-        return GateResult(False, "blocked", f"quote_{quote.status}")
     if quote.order_id not in session.verified_orders:
         return GateResult(False, "blocked", "not_verified")
     if quote.decision.decision == "needs_human":

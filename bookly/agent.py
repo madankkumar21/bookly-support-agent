@@ -7,8 +7,11 @@ One customer turn:
   4. On the final reply: strip the [[options: ...]] line into buttons, run the claim check,
      and attach the confirmation card if a quote is waiting for the customer.
 
-The history is append-only: the model's responses go back whole (thinking blocks included),
-and nothing already sent is edited. The system prompt and tools never change, so they stay cached.
+The history is append-only: the model's responses go back whole (thinking blocks included), and
+nothing already sent is edited. The one exception is made before sending: when code replaces the
+customer-facing text (claim correction, refusal, empty reply), _append_final stores that text in
+place of the model's, so the history matches what the customer read. The system prompt and tools
+never change, so they stay cached. If an API call fails, the turn is rolled back so a retry is safe.
 """
 
 from __future__ import annotations
@@ -59,11 +62,12 @@ def unbacked_claim(reply: str, session: Session) -> bool:
     if any(a.kind == "return_created" for a in session.actions):
         return False
     for sentence in re.split(r"(?<=[.!?])\s+", reply):
-        if CLAIM_NOT_YET.search(sentence):
-            continue
-        # Judge each clause on its own, so "issued, and there's no need to send it back" still counts.
+        # Judge each clause on its own, so "issued, and there's no need to send it back" still counts, and
+        # "has been issued and you can expect it in 5 days" is not excused by the "can" in its second clause.
         for clause in re.split(r"[,;:]|\b(?:and|so|but)\b", sentence):
-            if CLAIM_OBJECT.search(clause) and CLAIM_DONE.search(clause) and not CLAIM_NEGATED.search(clause):
+            if CLAIM_NOT_YET.search(clause) or CLAIM_NEGATED.search(clause):
+                continue
+            if CLAIM_OBJECT.search(clause) and CLAIM_DONE.search(clause):
                 return True
     return False
 
@@ -179,9 +183,46 @@ class Agent:
             content = "[Customer pressed Cancel on the confirmation card]"
         s.log("customer", text=content, button=button, confirmation_signal=signal)
 
+        history_mark = len(self.messages)
         self.messages.append({"role": "user", "content": content or "(empty message)"})
         self.messages.append({"role": "system", "content": s.facts_block()})
 
+        try:
+            reply, resp_final, replaced = self._run_turn(s)
+        except Exception:
+            del self.messages[history_mark:]  # leave the history as it was, so the caller can retry this turn
+            s.turn -= 1
+            raise
+
+        options: list[str] = []
+        m = OPTIONS_RE.search(reply)
+        if m:
+            options = [o.strip() for o in m.group(1).split("|") if o.strip()]
+            reply = OPTIONS_RE.sub("", reply).strip()
+
+        if unbacked_claim(reply, s):
+            s.log("claim_check", fired=True, original=reply)
+            reply, replaced = self.kb.message("claim_correction"), True
+
+        if resp_final is not None:
+            self._append_final(resp_final, reply if replaced else None)
+
+        card = None
+        q = s.latest_quote()
+        if q and q.status == "open" and q.decision.refundable and q.confirmation == "pending":
+            if not q.presented:
+                q.presented = True
+                s.log("card_shown", quote_id=q.quote_id, card=q.card())
+            card = q.card()
+
+        s.log("agent", text=reply, options=options)
+        after = self.usage.as_dict()
+        turn_usage = {k: (round(after[k] - usage_before[k], 5) if isinstance(after[k], (int, float)) else after[k]) for k in after}
+        return TurnResult(reply=reply, options=options, card=card, handoff=s.handoff, events=s.trace[first_event:], usage=turn_usage)
+
+    def _run_turn(self, s: Session) -> tuple[str, object, bool]:
+        """The model loop for one turn: call, run tools, repeat. Returns (reply text, final response or None,
+        whether code wrote the reply)."""
         reply, resp_final, replaced = "", None, False
         for step in range(config.MAX_TOOL_STEPS_PER_TURN + 1):
             try:
@@ -225,32 +266,7 @@ class Agent:
                 reply, replaced = "Sorry, I didn't catch that. Could you tell me a bit more?", True
             resp_final = resp
             break
-
-        options: list[str] = []
-        m = OPTIONS_RE.search(reply)
-        if m:
-            options = [o.strip() for o in m.group(1).split("|") if o.strip()]
-            reply = OPTIONS_RE.sub("", reply).strip()
-
-        if unbacked_claim(reply, s):
-            s.log("claim_check", fired=True, original=reply)
-            reply, replaced = self.kb.message("claim_correction"), True
-
-        if resp_final is not None:
-            self._append_final(resp_final, reply if replaced else None)
-
-        card = None
-        q = s.latest_quote()
-        if q and q.status == "open" and q.decision.refundable and q.confirmation == "pending":
-            if not q.presented:
-                q.presented = True
-                s.log("card_shown", quote_id=q.quote_id, card=q.card())
-            card = q.card()
-
-        s.log("agent", text=reply, options=options)
-        after = self.usage.as_dict()
-        turn_usage = {k: (round(after[k] - usage_before[k], 5) if isinstance(after[k], (int, float)) else after[k]) for k in after}
-        return TurnResult(reply=reply, options=options, card=card, handoff=s.handoff, events=s.trace[first_event:], usage=turn_usage)
+        return reply, resp_final, replaced
 
     def _append_final(self, resp, replace_with: str | None) -> None:
         """Append the final response whole. If code replaced the text the customer saw (claim correction,

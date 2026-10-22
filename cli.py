@@ -103,7 +103,7 @@ def main() -> None:
     lines = None
     if args.script:
         path = Path(__file__).parent / "demo" / f"{args.script}.txt"
-        lines = [l for l in path.read_text().splitlines() if l.strip() and not l.startswith("#")]
+        lines = [ln for ln in path.read_text().splitlines() if ln.strip() and not ln.startswith("#")]
 
     while True:
         if lines is not None:

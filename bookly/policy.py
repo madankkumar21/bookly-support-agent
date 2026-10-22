@@ -29,7 +29,7 @@ class Policy:
     raw: dict
 
     @classmethod
-    def load(cls, path: Path = POLICY_PATH, overrides: dict[str, Any] | None = None) -> "Policy":
+    def load(cls, path: Path = POLICY_PATH, overrides: dict[str, Any] | None = None) -> Policy:
         raw = yaml.safe_load(Path(path).read_text())
         raw = copy.deepcopy(raw)
         for dotted, value in (overrides or {}).items():
@@ -224,7 +224,7 @@ def evaluate(
             policy_ref=f"policy {policy.version}: returns.human_approval_over_usd",
         )
 
-    resolution = "refund_no_return" if all(l.resolution == "refund_no_return" for l in lines) else "return_for_refund"
+    resolution = "refund_no_return" if all(line.resolution == "refund_no_return" for line in lines) else "return_for_refund"
     return Decision(
         decision=resolution,
         reason=reason,

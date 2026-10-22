@@ -1,10 +1,10 @@
 [project]
 name = "bookly-agent"
 version = "0.1.0"
-description = "Bookly customer-support agent: the model talks, code decides, the customer confirms."
+description = "Bookly customer-support agent: the AI handles the conversation, code decides every refund, the customer confirms."
 requires-python = ">=3.12"
 dependencies = [
-    "anthropic>=0.70",
+    "anthropic>=1.13",
     "fastapi>=0.115",
     "uvicorn>=0.30",
     "pydantic>=2.8",
@@ -20,3 +20,14 @@ testpaths = ["tests"]
 
 [tool.uv]
 package = false
+
+[tool.ruff]
+line-length = 130
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "S", "SIM", "E741"]
+ignore = ["E501"]  # a few long table-like lines read better unwrapped
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]  # pytest asserts

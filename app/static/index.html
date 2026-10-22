@@ -132,7 +132,7 @@ function resultLine(tool, r) {
 // The allowed reason in plain words; blocked reasons pass through as the gate wrote them.
 function plainReason(reason) {
   return reason === "verified, latest quote, eligible, under cap, confirmed by customer"
-    ? "order verified, current terms, eligible, under $100 limit, customer confirmed" : reason;
+    ? "order verified, current terms, eligible, under the approval limit, customer confirmed" : reason;
 }
 
 let lastTurn = 0;
@@ -165,7 +165,7 @@ function renderSystems(s) {
   if (!s.returns.length && !s.tickets.length && !s.password_resets.length) { box.appendChild(el("div", "empty", "No returns, tickets or resets yet.")); return; }
   s.returns.forEach((r) => box.appendChild(el("div", "rec", `Return ${r.rma_id} · refund ${r.refund_id} · $${r.amount.toFixed(2)} · ${r.reason} · ${r.resolution}`)));
   s.tickets.forEach((tk) => box.appendChild(el("div", "rec", `Ticket ${tk.ticket_id} · ${tk.reason_code} · ${tk.payload.identity}`)));
-  s.password_resets.forEach((e) => box.appendChild(el("div", "rec", `Password reset link sent · ${e}`)));
+  s.password_resets.forEach((e) => box.appendChild(el("div", "rec", `Password reset requested · ${e}`)));
 }
 
 async function send(text, button, quoteId) {

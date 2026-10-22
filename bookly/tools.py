@@ -1,13 +1,13 @@
 """Purpose-built tools the model can call. Reads are separate from writes; every write passes the gate.
 
-Each tool: name(inputs) -> {status enum, ..., ts}. Descriptions are written for the model, because
+Each tool: name(inputs) -> {status enum, ...}. Descriptions are written for the model, because
 under-described tools were the most common cause of wrong tool use in earlier builds.
 """
 
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 from typing import Any
 
 from bookly import config
@@ -112,10 +112,6 @@ TOOLS: list[dict] = sorted(
 )
 
 
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
-
-
 def _human(d: date | None) -> str | None:
     """Dates the way a person says them: 'Tuesday, October 13'."""
     return f"{d:%A}, {d:%B} {d.day}" if d else None
@@ -146,7 +142,6 @@ NEXT_STEP_FOR_BLOCK = {
 class Toolbox:
     def __init__(self, session: Session, backend: Backend, policy: Policy, policy_text: PolicyText):
         self.s, self.b, self.p, self.kb = session, backend, policy, policy_text
-        self.lookup_misses = 0
 
     def run(self, name: str, args: dict[str, Any]) -> tuple[dict, bool]:
         """Execute one tool call. Returns (result, is_error). Never raises into the model loop."""
@@ -154,28 +149,31 @@ class Toolbox:
         if handler is None:
             return {"status": "error", "reason": f"unknown tool {name}"}, True
         try:
-            result = handler(**args)
+            return handler(**args), False
         except Exception as exc:  # a broken tool must not crash the conversation
             self.s.log("tool_error", tool=name, error=repr(exc))
             return {"status": "failed", "reason": "internal_error", "next_step": "Apologize and try once more; if it fails again, hand off to a person."}, True
-        result.setdefault("ts", _now())
-        return result, False
 
     # ---- reads --------------------------------------------------------------------------
     def _t_get_order(self, order_id: str, email: str) -> dict:
+        if self.s.lookup_misses >= config.MAX_LOOKUP_MISSES:  # code locks the tool; the model cannot keep guessing
+            return {"status": "locked", "next_step": "Order lookups are locked for this conversation after repeated "
+                    "failures. Do not try again. Offer to connect the customer with a person."}
         order = self.b.lookup(order_id, email)
         if order is None:
-            self.lookup_misses += 1
-            out = {"status": "no_match", "misses_this_conversation": self.lookup_misses}
-            if self.lookup_misses >= 2:
+            self.s.lookup_misses += 1
+            out = {"status": "no_match", "misses_this_conversation": self.s.lookup_misses}
+            if self.s.lookup_misses >= 2:
                 out["next_step"] = "Two lookups have failed. Offer to connect the customer with a person."
             return out
         self.s.verified_orders[order.order_id] = order.customer_name
         returned = self.b.returned_item_ids(order.order_id)
         today = self.b.today
+        # Lost = no tracking scan for N business days after the estimate (the same rule the policy text states).
+        last_known = max(d for d in (order.eta, order.last_scan_at) if d) if order.eta else None
         likely_lost = bool(
             order.status == "shipped" and order.eta and today > order.eta
-            and _business_days_between(order.eta, today) >= int(self.p.get("shipping.lost_after_business_days_past_eta"))
+            and _business_days_between(last_known, today) >= int(self.p.get("shipping.lost_after_business_days_past_eta"))
         )
         return {
             "status": "found",
@@ -252,15 +250,15 @@ class Toolbox:
         }
 
     def _explain(self, d) -> list[str]:
-        rules = {
-            "outside_return_window": f"Change-of-mind returns are accepted within {self.p.print_window} days of delivery.",
-            "outside_damage_window": f"Damaged or wrong items must be reported within {self.p.damaged_window} days of delivery.",
-            "outside_ebook_window": f"Ebooks can be refunded within {self.p.ebook_window} days of purchase.",
-            "ebook_downloaded": "Ebooks cannot be refunded once they have been downloaded.",
-            "not_delivered": "A book can be returned once it has been delivered.",
-            "already_returned": "This book already has a return.",
-        }
-        return [f"{r.title}: {rules.get(r.reason_code, r.reason_code)} {r.detail}".strip() for r in d.rejected]
+        """One sentence of pinned policy text per rejected book, from policy_text.yaml (so the no-digits test covers it)."""
+        out = []
+        for r in d.rejected:
+            try:
+                rule = self.kb.message(f"ineligible_{r.reason_code}")
+            except KeyError:
+                rule = r.reason_code
+            out.append(f"{r.title}: {rule} {r.detail}".strip())
+        return out
 
     def _t_search_policy(self, topic: str) -> dict:
         passages = self.kb.search(topic)

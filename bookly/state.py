@@ -8,11 +8,18 @@ agent into "you already verified me" or "you already approved my refund".
 from __future__ import annotations
 
 import itertools
-import uuid
+import secrets
 from dataclasses import dataclass, field
 from typing import Any
 
-from bookly.policy import REASONS, Decision
+from bookly.policy import Decision
+
+# The reason as the customer reads it on the card. REASONS in policy.py is the model-facing wording.
+CARD_REASONS = {
+    "damaged": "The book arrived damaged",
+    "wrong_item": "You received the wrong book",
+    "changed_mind": "You no longer want it",
+}
 
 
 @dataclass
@@ -32,7 +39,7 @@ class Quote:
             "quote_id": self.quote_id,
             "order_id": self.order_id,
             "items": [line.title for line in self.decision.lines],
-            "reason": REASONS.get(self.reason, self.reason),
+            "reason": CARD_REASONS.get(self.reason, self.reason),
             "amount": f"${self.decision.amount:,.2f}",
             "terms": self.terms,
         }
@@ -47,9 +54,10 @@ class Action:
 
 @dataclass
 class Session:
-    session_id: str = field(default_factory=lambda: uuid.uuid4().hex[:8])
+    session_id: str = field(default_factory=lambda: secrets.token_hex(16))  # the web demo's only credential
     turn: int = 0
     verified_orders: dict[str, str] = field(default_factory=dict)  # order_id -> customer name
+    lookup_misses: int = 0  # failed order lookups; code locks the tool after config.MAX_LOOKUP_MISSES
     quotes: dict[str, Quote] = field(default_factory=dict)
     latest_quote_id: str | None = None
     actions: list[Action] = field(default_factory=list)

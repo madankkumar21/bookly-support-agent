@@ -89,3 +89,16 @@ messages:
     {account.reset_link_valid_minutes} minutes.
   claim_correction: >-
     I want to be accurate: nothing has been refunded or returned yet.
+  # One sentence per reason the engine can refuse with. The tool quotes these; the model never writes its own.
+  ineligible_outside_return_window: >-
+    Change-of-mind returns are accepted within {returns.print_return_window_days} days of delivery.
+  ineligible_outside_damage_window: >-
+    Damaged or wrong items must be reported within {returns.damaged_window_days} days of delivery.
+  ineligible_outside_ebook_window: >-
+    Ebooks can be refunded within {returns.ebook_refund_window_days} days of purchase.
+  ineligible_ebook_downloaded: >-
+    Ebooks cannot be refunded once they have been downloaded.
+  ineligible_not_delivered: >-
+    A book can be returned once it has been delivered.
+  ineligible_already_returned: >-
+    This book already has a return.
