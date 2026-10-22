@@ -28,6 +28,8 @@ uv run pytest                 # 101 tests, no API key needed, about 2 seconds
 
 `uv run` installs the exact versions in `uv.lock`. The server binds to 127.0.0.1. Keep it that way, because every chat turn spends the key owner's API budget.
 
+**Models.** `BOOKLY_AGENT_MODEL` in `.env` picks the Claude model; Sonnet 5.5 is the default, and Opus is compared in [docs/MODEL_COMPARISON.md](docs/MODEL_COMPARISON.md). The API is called in one method (`Agent._call` in `bookly/agent.py`), and the rules, the gate, the tools and the evals never touch it, so another provider is one adapter plus a re-run of the suite. I did not build that adapter: the brief allows one API, and each provider's claim needs its own 80-conversation run.
+
 Other entry points:
 - **CLI with an inline trace:** `uv run python cli.py`, or play a scripted demo with `uv run python cli.py --script maya`.
 - **Eval suite (about $1 for 80 conversations):** `uv run python -m evals.run_evals --k 5`.
