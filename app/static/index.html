@@ -74,10 +74,10 @@
   </section>
   <section class="hood">
     <div class="panel-head">
-      <h2>Under the hood</h2>
-      <div class="legend"><b class="m">Blue</b> = the model chose it · <b class="c">Grey</b> = code decided it · green / red = the gate allowed / blocked a write</div>
+      <h2>Behind the reply</h2>
+      <div class="legend"><b class="m">Blue</b> = the AI decided · <b class="c">Grey</b> = Bookly’s rules decided · green = refund allowed · red = refund blocked</div>
     </div>
-    <div class="trace" id="trace"><div class="ev dim">Every tool call, gate decision and confirmation shows here, turn by turn.</div></div>
+    <div class="trace" id="trace"><div class="ev dim">Every lookup, policy decision and confirmation shows here, turn by turn.</div></div>
     <div class="systems" id="systems"></div>
   </section>
 </main>
@@ -121,12 +121,18 @@ function resultLine(tool, r) {
     if (r.decision === "needs_input") return `needs_input (${r.field})`;
     if (r.decision === "ineligible") return `ineligible (${r.reason_code})`;
     if (r.decision === "needs_human") return `needs_human ($${r.amount} over limit)`;
-    return `${r.decision} · $${r.amount} · quote ${r.quote_id}`;
+    return `${r.decision} · $${r.amount} · terms ${r.quote_id}`;
   }
   if (tool === "create_return") return r.status + (r.rma_id ? ` · ${r.rma_id} / ${r.refund_id}` : r.reason ? ` · ${r.reason}` : "");
   if (tool === "search_policy") return `${(r.passages || []).length} passage(s) ${(r.passages || []).map((p) => p.id).join(", ")}`;
   if (tool === "handoff_to_human") return `queued · ${r.ticket_id}`;
   return r.status || JSON.stringify(r);
+}
+
+// The allowed reason in plain words; blocked reasons pass through as the gate wrote them.
+function plainReason(reason) {
+  return reason === "verified, latest quote, eligible, under cap, confirmed by customer"
+    ? "order verified, current terms, eligible, under $100 limit, customer confirmed" : reason;
 }
 
 let lastTurn = 0;
@@ -141,8 +147,8 @@ function renderTrace(events, latency) {
     if (e.kind === "confirmation") { cls = e.signal === "confirm" ? "ok" : "warn"; txt = `customer's reply to the card, read by code: ${e.signal} (${e.source})`; }
     else if (e.kind === "tool_call") { cls = "model"; txt = `→ ${e.tool}(${fmtArgs(e.input)})`; }
     else if (e.kind === "tool_result") { cls = e.result && e.result.status === "blocked" ? "bad" : "code"; txt = `← ${resultLine(e.tool, e.result || {})}`; }
-    else if (e.kind === "gate") { cls = e.allowed ? "ok" : "bad"; txt = `gate · create_return ${e.allowed ? "ALLOWED" : "BLOCKED"} · ${e.reason}`; }
-    else if (e.kind === "card_shown") { cls = "warn"; txt = `confirmation card shown · ${e.quote_id} (terms rendered by code)`; }
+    else if (e.kind === "gate") { cls = e.allowed ? "ok" : "bad"; txt = `final check · refund ${e.allowed ? "ALLOWED" : "BLOCKED"} · ${plainReason(e.reason)}`; }
+    else if (e.kind === "card_shown") { cls = "warn"; txt = `confirmation card shown · ${e.quote_id} (built by code from the terms)`; }
     else if (e.kind === "claim_check") { cls = "bad"; txt = "claim check replaced a reply that claimed an unbacked refund"; }
     else if (e.kind === "api_call") { cls = "dim"; txt = `${e.model} · ${e.stop_reason} · ${e.latency_ms} ms`; }
     else if (e.kind === "api_error" || e.kind === "tool_error") { cls = "bad"; txt = e.kind; }
@@ -155,7 +161,7 @@ function renderTrace(events, latency) {
 
 function renderSystems(s) {
   const box = $("systems"); box.innerHTML = "";
-  box.appendChild(el("h2", null, "Bookly systems (mock)"));
+  box.appendChild(el("h2", null, "Bookly’s systems (simulated)"));
   if (!s.returns.length && !s.tickets.length && !s.password_resets.length) { box.appendChild(el("div", "empty", "No returns, tickets or resets yet.")); return; }
   s.returns.forEach((r) => box.appendChild(el("div", "rec", `Return ${r.rma_id} · refund ${r.refund_id} · $${r.amount.toFixed(2)} · ${r.reason} · ${r.resolution}`)));
   s.tickets.forEach((tk) => box.appendChild(el("div", "rec", `Ticket ${tk.ticket_id} · ${tk.reason_code} · ${tk.payload.identity}`)));
