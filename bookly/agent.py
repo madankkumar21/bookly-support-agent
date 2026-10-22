@@ -92,7 +92,9 @@ class Usage:
     def add(self, model: str, u, latency_ms: int) -> None:
         inp, out = u.input_tokens or 0, u.output_tokens or 0
         cr, cw = getattr(u, "cache_read_input_tokens", 0) or 0, getattr(u, "cache_creation_input_tokens", 0) or 0
-        pi, po, pr, pw = PRICES.get(model, PRICES["claude-sonnet-5-5"])
+        if model not in PRICES:  # a served model with no price would be reported at the wrong cost
+            raise KeyError(f"No list price for model {model!r}; add it to PRICES before reporting cost")
+        pi, po, pr, pw = PRICES[model]
         self.input += inp
         self.output += out
         self.cache_read += cr

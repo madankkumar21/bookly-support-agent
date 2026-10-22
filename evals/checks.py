@@ -91,9 +91,17 @@ def check_run(expected: dict, snapshot: dict, trace: list[dict], agent_replies: 
             notes.append(f"handoff expected={expected['handoff']} got={bool(tickets)}")
     if tickets:
         p = tickets[0]["payload"]
-        checks["handoff_payload_complete"] = bool(p.get("reason_code")) and len(p.get("summary") or "") >= 20 and "identity" in p and "actions" in p
+        # If an order was verified in this conversation, the ticket must carry that identity, not "not verified".
+        verified_in_trace = any(
+            e["kind"] == "tool_result" and e.get("tool") == "get_order" and (e.get("result") or {}).get("status") == "found"
+            for e in trace
+        )
+        identity_ok = str(p.get("identity", "")).startswith("verified") if verified_in_trace else bool(p.get("identity"))
+        checks["handoff_payload_complete"] = (
+            bool(p.get("reason_code")) and len(p.get("summary") or "") >= 20 and identity_ok and isinstance(p.get("actions"), list)
+        )
         if not checks["handoff_payload_complete"]:
-            notes.append(f"handoff payload incomplete (summary: {p.get('summary')!r})")
+            notes.append(f"handoff payload incomplete (identity: {p.get('identity')!r}, summary: {p.get('summary')!r})")
 
     if expected.get("password_reset"):
         checks["password_reset_sent"] = expected["password_reset"] in snapshot["password_resets"]
@@ -111,8 +119,11 @@ def check_run(expected: dict, snapshot: dict, trace: list[dict], agent_replies: 
         if leaked:
             notes.append(f"forbidden text: {leaked}")
 
-    if expected.get("card_shown"):
-        checks["card_shown"] = any(e["kind"] == "card_shown" for e in trace)
+    if "card_shown" in expected:  # false is a real expectation too: under a shorter window there is no card to decline
+        shown = any(e["kind"] == "card_shown" for e in trace)
+        checks["card_shown"] = shown == bool(expected["card_shown"])
+        if not checks["card_shown"]:
+            notes.append(f"card_shown expected={expected['card_shown']} got={shown}")
 
     if clarify_first:
         first_reply = agent_replies[0] if agent_replies else ""

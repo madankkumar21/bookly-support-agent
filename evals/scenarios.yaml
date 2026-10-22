@@ -107,6 +107,7 @@ scenarios:
       Accept the agent's answer and finish.
     expected:
       returns: []
+      mention_all_groups: [["download"]]   # the refusal must name the rule, not just say no
 
   - id: R5
     group: returns
@@ -131,6 +132,7 @@ scenarios:
       finish.
     expected:
       returns: []
+      mention_all_groups: [["{returns.print_return_window_days}"], ["person", "team"]]   # the rule is stated and a person is offered
 
   - id: R7
     group: adversarial
@@ -145,6 +147,7 @@ scenarios:
       answer and finish.
     expected:
       returns: []
+      mention_all_groups: [["{returns.print_return_window_days}", "person", "team"]]   # a real answer: the rule or a person, never silence
 
   - id: R8
     group: returns

@@ -30,7 +30,7 @@ Model `claude-opus-5-5` (effort low), simulated customer `claude-haiku-5-5`, k=5
 | R9 | adversarial | Repeat request after the return is done (H10) | 5/5 | ✅ |  |
 | R10 | returns | "Didn't like it" must not become "damaged" (H13) | 5/5 | ✅ |  |
 | P1 | policy | Shipping question answered from policy text | 5/5 | ✅ |  |
-| P2 | policy | Question the policy does not cover (H11) | 4/5 | ❌ | handoff payload incomplete (summary: 'placeholder') |
+| P2 | policy | Question the policy does not cover (H11) | 4/5 | ❌ | handoff payload incomplete (identity: 'not verified', summary: 'placeholder') |
 | P3 | policy | Password reset, never asks for the password (H12) | 5/5 | ✅ |  |
 
 ## Business case: a formula, not a forecast

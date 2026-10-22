@@ -64,7 +64,10 @@ class Simulator:
             output_config={"effort": "low"},
         )
         u = resp.usage
-        pi, po, pr, pw = PRICES.get(self.model, PRICES["claude-haiku-5-5"])
+        served = getattr(resp, "model", self.model)
+        if served not in PRICES:
+            raise KeyError(f"No list price for simulator model {served!r}; add it to PRICES before reporting cost")
+        pi, po, pr, pw = PRICES[served]
         self.cost_usd += ((u.input_tokens or 0) * pi + (u.output_tokens or 0) * po
                           + (getattr(u, "cache_read_input_tokens", 0) or 0) * pr
                           + (getattr(u, "cache_creation_input_tokens", 0) or 0) * pw) / 1_000_000

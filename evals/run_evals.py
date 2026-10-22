@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import statistics
 import threading
 import time
@@ -70,7 +71,9 @@ class Budget:
 
     def exhausted(self) -> bool:
         with self.lock:
-            return self.spent >= self.limit or self.stopped is not None
+            if self.spent >= self.limit and self.stopped is None:
+                self.stopped = f"budget cap ${self.limit:.2f} reached"
+            return self.stopped is not None
 
     def stop(self, why: str) -> None:
         with self.lock:
@@ -95,6 +98,8 @@ def run_one(scenario: dict, run_index: int, args, overrides: dict, client: anthr
             if move.done:
                 break
             text, button = move.text, move.button
+        else:  # the customer never finished: a runner error, not a pass
+            error = f"turn_cap: {MAX_CUSTOMER_TURNS} customer turns without the simulator finishing"
     except SimulatorRefused as exc:
         error = f"simulator_refused: {exc}"
     except Exception as exc:  # recorded as a runner error, never as a pass or a fail
@@ -268,12 +273,16 @@ def main() -> None:
     ap.add_argument("--label", default="sonnet")
     args = ap.parse_args()
 
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", args.label):
+        ap.error("--label must be a plain name (letters, digits, - and _); it becomes a folder name")
     overrides = dict(o.split("=", 1) for o in args.override)
     scenarios = load_scenarios({x.strip() for x in args.only.split(",") if x.strip()} or None)
     client = config.make_client(timeout=120, max_retries=3)
     budget = Budget(args.budget)
     out = HERE / "results" / f"{datetime.now():%Y-%m-%d}-{args.label}"
-    out.mkdir(parents=True, exist_ok=True)
+    if out.exists():
+        ap.error(f"{out} already exists; choose another --label so no saved run is overwritten")
+    out.mkdir(parents=True)
 
     jobs = [(s, i) for s in scenarios for i in range(args.k)]
     print(f"Running {len(jobs)} conversations ({len(scenarios)} scenarios × k={args.k}) on {args.model}; budget ${args.budget}")

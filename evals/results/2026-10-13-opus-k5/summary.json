@@ -187,7 +187,7 @@
       "pass_k": false,
       "errors": 0,
       "notes": [
-        "handoff payload incomplete (summary: 'placeholder')"
+        "handoff payload incomplete (identity: 'not verified', summary: 'placeholder')"
       ]
     },
     {

@@ -165,7 +165,8 @@ def evaluate(
 
     for item_id in dict.fromkeys(item_ids):  # de-duplicate, keep order
         item = order.item(item_id)
-        assert item is not None
+        if item is None:  # unknown ids were rejected above; this keeps the type checker and bandit honest
+            continue
         if item_id in already_returned:
             rejected.append(Rejected(item_id, item.title, "already_returned", f"Return {already_returned[item_id]} already exists for this item."))
             continue
