@@ -57,6 +57,24 @@ Results after the fixes:
 
 Lesson: three of the five failures the evals found were in my own checks or scenarios, not in the agent. A rubric needs the same tests as the code it grades.
 
+## Intent router (2026-10-29, after the review)
+
+The review asked how intent detection works today and at about fifty intents, and how one message with several requests is routed. The answer is now built and measured, off by default: [docs/ROUTER.md](ROUTER.md). The submitted version is tagged `submitted-2026-10-22`.
+
+| Decision | Alternative considered | Why this one |
+|---|---|---|
+| A Haiku 5.5 call labels each message from a fixed list, through structured output | Embeddings, or a trained classifier | Fastest to stand up and measure. At high volume a trained classifier is cheaper; the labelled set and the eval carry over unchanged |
+| The router narrows procedures, never tools | Load only each intent's tools | Changing the tool list breaks the cached prefix, and adds no safety, because the gate already refuses any refund without a confirmed quote. It would also dead-end a misroute, since the procedures call each other's tools. An independent review of the plan caught this before any code |
+| A procedure goes into that turn's system message, once, the first time it is needed | Rebuild the system prompt per intent | The system prompt and tools stay byte-identical, so caching and the append-only history hold |
+| Anything uncertain loads every procedure: low confidence, an error, an empty answer, a refusal | Trust the label | The router can only widen what loads, so it can never make the agent worse than with the router off |
+| Code adds what the session already shows: an issued quote loads returns, a verified order loads order status | Trust the router every turn | A misread "yes" can never unload the procedure for a refund in progress |
+| A card button skips the router | Classify every turn | The money turn gets no extra latency, and the "[Customer pressed Confirm…]" text has nothing to classify |
+| The expected result was written and committed before the first run | Write the targets after seeing the numbers | A target set after the run proves nothing |
+
+| What broke | How it was found | Fix |
+|---|---|---|
+| My first write-up of the router eval said "11 inexact runs across six items"; the raw runs said 10 across four, and the vague openers had order status added, not returns | Recounting from `runs.jsonl` before committing | Corrected in ROUTER.md; every number there is now read from the run's files |
+
 
 ## What the independent review of the finished build found (2026-10-13)
 

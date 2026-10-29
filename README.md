@@ -82,7 +82,7 @@ Customer ─▶ Web chat / CLI
 
 | Part | What it is | Its trade-off |
 |---|---|---|
-| **Orchestration** | One agent, one hand-written loop (no agent framework, no tool runner) | At about 50 intents one prompt gets crowded. Then a small router loads only the matching procedure |
+| **Orchestration** | One agent, one hand-written loop (no agent framework, no tool runner) | At about 50 intents one prompt gets crowded. A router that loads only the matching procedures is built and measured, off by default ([docs/ROUTER.md](docs/ROUTER.md)) |
 | **Tools** | Six purpose-built tools; reads are separate from writes | More code than exposing raw APIs, but the guardrails are mine |
 | **Memory** | The transcript, plus a code-owned `Session`: verified orders, latest quote, confirmation, actions | More code than "keep the chat history", but the model cannot be talked into "you already verified me" |
 | **Prompts** | Four layers: system rules → plain-English procedures (AOP-style, `bookly/procedures/`) → tool descriptions → a per-turn facts block. The first three are static and prompt-cached | The model follows procedures; the gate enforces them |
@@ -145,6 +145,15 @@ Also decided, with reasons, in [docs/BUILD_LOG.md](docs/BUILD_LOG.md):
 
 1. **Before more code: a test set from Bookly's real return and order-status tickets, with pass criteria agreed with their CX lead.** My synthetic customers test my own assumptions; Bookly's tickets test Bookly's.
 2. **The first code change: the customer picks the reason on the card, as buttons.** The reason is the one money-relevant choice the model still makes.
+
+## Added after the review (2026-10-27)
+
+The review asked how intent routing works at about fifty intents, and how one message with several requests is handled. I built the router, off by default (`BOOKLY_ROUTER=1`), and measured it:
+- **On its own:** on 60 synthetic labelled messages, three runs each, it loaded the needed procedure in 180 of 180, with 94% exact labels. Every inexact answer added a procedure; none dropped one.
+- **In the agent:** in same-day k=5 runs, 16 of 16 scenarios passed with the router on, with 0 wrong refunds, at 0.8 s more median latency and 3% more cost. At three intents that buys nothing, so it stays off. The case for it starts at dozens of procedures.
+- **Several requests in one message:** "return a damaged book, and recommend something similar" loads returns and other. In a live run, the agent took the return first and offered a person for the recommendation.
+
+Design, numbers and caveats: [docs/ROUTER.md](docs/ROUTER.md). The submitted version is tagged `submitted-2026-10-22`.
 
 How I would run this as a POV for Bookly: exit criteria signed before the build, with what this prototype already shows against each one, the commands Bookly's own team runs, the rollout and the business case as a formula, in [docs/BOOKLY_EVALUATION_PLAN.md](docs/BOOKLY_EVALUATION_PLAN.md).
 
