@@ -30,6 +30,12 @@ AGENT_MAX_TOKENS = int(os.getenv("BOOKLY_AGENT_MAX_TOKENS", "4000"))
 # Simulated customer for evals.
 SIM_MODEL = os.getenv("BOOKLY_SIM_MODEL", "claude-haiku-5-5")
 
+# Intent router, off by default (bookly/router.py). Below the threshold it loads every procedure.
+ROUTER_ENABLED = os.getenv("BOOKLY_ROUTER", "0") == "1"
+ROUTER_MODEL = os.getenv("BOOKLY_ROUTER_MODEL", "claude-haiku-5-5")
+ROUTER_THRESHOLD = float(os.getenv("BOOKLY_ROUTER_THRESHOLD", "0.6"))
+ROUTER_TIMEOUT_S = 5.0
+
 # Only needed when the API key is not scoped to a workspace.
 WORKSPACE_ID = os.getenv("ANTHROPIC_WORKSPACE_ID", "").strip()
 
