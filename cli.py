@@ -3,6 +3,7 @@
     uv run python cli.py                 # interactive
     uv run python cli.py --script demo   # play a scripted conversation from demo/<name>.txt
     uv run python cli.py --no-trace      # hide the trace
+    uv run python cli.py --router        # turn on the intent router (docs/ROUTER.md)
 
 At a confirmation card, type /confirm or /cancel to press the buttons (or reply in words).
 When options are shown, type the number to pick one.
@@ -16,6 +17,7 @@ import sys
 from pathlib import Path
 
 from bookly.agent import Agent, TurnResult
+from bookly.router import Router
 
 DIM, BOLD, CYAN, GREEN, RED, YELLOW, RESET = "\033[2m", "\033[1m", "\033[36m", "\033[32m", "\033[31m", "\033[33m", "\033[0m"
 
@@ -60,6 +62,14 @@ def print_trace(events: list[dict]) -> None:
             print(f"{RED}  ! claim check replaced an unbacked refund claim{RESET}")
         elif k == "api_call":
             print(f"{DIM}  · {e['model']} {e['stop_reason']} {e['latency_ms']} ms{RESET}")
+        elif k == "route":
+            added = ", ".join(e["procedures"]) or "nothing new"
+            if e["skipped"]:
+                print(f"{CYAN}  ⇢ router skipped (card button) · loaded {added}{RESET}")
+            elif e["fallback"]:
+                print(f"{CYAN}  ⇢ router unsure ({e['route_error'] or round(e['confidence'] or 0, 2)}) → all procedures · loaded {added}{RESET}")
+            else:
+                print(f"{CYAN}  ⇢ router: {' + '.join(e['intents'])} ({e['confidence']:.2f}) · loaded {added}{RESET}")
 
 
 def print_turn(t: TurnResult, trace: bool) -> None:
@@ -93,11 +103,16 @@ def main() -> None:
     ap.add_argument("--script", help="name of a file in demo/ with one customer message per line")
     ap.add_argument("--no-trace", action="store_true")
     ap.add_argument("--model", default=None)
+    ap.add_argument("--router", action="store_true", help="turn on the intent router (same as BOOKLY_ROUTER=1)")
     args = ap.parse_args()
     trace = not args.no_trace
 
-    agent = Agent(**({"model": args.model} if args.model else {}))
-    print(f"{BOLD}Bookly support{RESET} {DIM}(model {agent.model}; /quit to exit){RESET}")
+    kwargs = {"model": args.model} if args.model else {}
+    if args.router:
+        kwargs["router"] = Router()
+    agent = Agent(**kwargs)
+    router_note = "; router on" if agent.router else ""
+    print(f"{BOLD}Bookly support{RESET} {DIM}(model {agent.model}{router_note}; /quit to exit){RESET}")
     last: TurnResult | None = None
 
     lines = None

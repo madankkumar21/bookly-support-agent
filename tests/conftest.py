@@ -11,6 +11,14 @@ from bookly.kb import PolicyText  # noqa: E402
 from bookly.policy import Policy  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def router_off(monkeypatch):
+    """A BOOKLY_ROUTER=1 in .env must not reach the scripted tests: they would call the real router."""
+    import bookly.config
+
+    monkeypatch.setattr(bookly.config, "ROUTER_ENABLED", False)
+
+
 @pytest.fixture
 def backend() -> Backend:
     return Backend.load()

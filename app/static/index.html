@@ -159,6 +159,14 @@ function plainReason(reason) {
     ? "order verified, current terms, eligible, under the approval limit, customer confirmed" : reason;
 }
 
+// The intent router's decision (router on only): which procedures this turn added to the prompt.
+function routeLine(e) {
+  const added = e.procedures && e.procedures.length ? `loaded ${e.procedures.join(", ")}` : "nothing new to load";
+  if (e.skipped) return `router skipped (card button) · ${added}`;
+  if (e.fallback) return `router unsure${e.route_error ? " (" + e.route_error + ")" : ` (${(e.confidence ?? 0).toFixed(2)})`} → all procedures · ${added}`;
+  return `router: ${e.intents.join(" + ")} (${e.confidence.toFixed(2)}) · ${added}`;
+}
+
 let lastTurn = 0;
 function renderTrace(events, latency) {
   const t = $("trace");
@@ -169,6 +177,7 @@ function renderTrace(events, latency) {
   events.forEach((e) => {
     let cls = "code", txt = "";
     if (e.kind === "confirmation") { cls = e.signal === "confirm" ? "ok" : "warn"; txt = `customer's reply to the card, read by code: ${e.signal} (${e.source})`; }
+    else if (e.kind === "route") { cls = "model"; txt = routeLine(e); }
     else if (e.kind === "tool_call") { cls = "model"; txt = `→ ${e.tool}(${fmtArgs(e.input)})`; }
     else if (e.kind === "tool_result") { cls = e.result && e.result.status === "blocked" ? "bad" : "code"; txt = `← ${resultLine(e.tool, e.result || {})}`; }
     else if (e.kind === "gate") { cls = e.allowed ? "ok" : "bad"; txt = `final check · refund ${e.allowed ? "ALLOWED" : "BLOCKED"} · ${plainReason(e.reason)}`; }

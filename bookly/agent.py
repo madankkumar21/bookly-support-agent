@@ -12,6 +12,10 @@ nothing already sent is edited. The one exception is made before sending: when c
 customer-facing text (claim correction, refusal, empty reply), _append_final stores that text in
 place of the model's, so the history matches what the customer read. The system prompt and tools
 never change, so they stay cached. If an API call fails, the turn is rolled back so a retry is safe.
+
+With the intent router on (off by default; bookly/router.py), the system prompt carries no procedures.
+Before step 2, a small model labels the message, and each procedure the conversation needs goes into that
+turn's system message the first time it is needed. The tool list still never changes.
 """
 
 from __future__ import annotations
@@ -27,6 +31,7 @@ from bookly.backend import Backend
 from bookly.gate import register_customer_reply
 from bookly.kb import PolicyText
 from bookly.policy import Policy
+from bookly.router import PROCEDURE_INTENTS, REGISTRY, Router
 from bookly.state import Session
 from bookly.tools import TOOLS, Toolbox, result_json
 
@@ -50,11 +55,26 @@ CLAIM_NOT_YET = re.compile(r"\b(once|after you|if you|when you|will|would|can|co
 CLAIM_NEGATED = re.compile(r"\b(no|not|nothing|never|neither|nor|haven't|hasn't|hadn't|didn't|wasn't|weren't|isn't|aren't|cancel\w*)\b", re.I)
 
 
-def build_system_prompt() -> str:
-    parts = [(config.PROMPTS / "system.md").read_text().strip(), "# Procedures"]
+ROUTED_PROCEDURES_NOTE = (
+    "# Procedures\n\nThe Bookly system adds each procedure this conversation needs as a system message, when it "
+    "first becomes relevant. Each one stays in force for the rest of the conversation. Follow them."
+)
+
+
+def build_system_prompt(include_procedures: bool = True) -> str:
+    base = (config.PROMPTS / "system.md").read_text().strip()
+    if not include_procedures:  # the router adds them as they are needed
+        return base + "\n\n" + ROUTED_PROCEDURES_NOTE
+    parts = [base, "# Procedures"]
     for path in sorted(config.PROCEDURES.glob("*.md")):
         parts.append(path.read_text().strip())
     return "\n\n".join(parts)
+
+
+def procedure_block(intents: list[str]) -> str:
+    texts = [(config.PROCEDURES / REGISTRY[i]["procedure"]).read_text().strip() for i in intents]
+    return ("PROCEDURES (added by the Bookly system). These stay in force for the rest of the conversation; "
+            "later FACTS SO FAR blocks do not replace them.\n\n" + "\n\n".join(texts))
 
 
 def unbacked_claim(reply: str, session: Session) -> bool:
@@ -124,6 +144,7 @@ class Agent:
         client: anthropic.Anthropic | None = None,
         model: str = config.AGENT_MODEL,
         effort: str = config.AGENT_EFFORT,
+        router: Router | None = None,
     ):
         self.backend = backend or Backend.load()
         self.policy = policy or Policy.load()
@@ -132,7 +153,9 @@ class Agent:
         self.toolbox = Toolbox(self.session, self.backend, self.policy, self.kb)
         self.client = client or config.make_client()
         self.model, self.effort = model, effort
-        self.system = build_system_prompt()
+        self.router = router if router is not None else (Router() if config.ROUTER_ENABLED else None)
+        self.loaded_intents: set[str] = set()  # procedures already sent in this conversation (router on)
+        self.system = build_system_prompt(include_procedures=self.router is None)
         self.messages: list[dict] = []
         self.usage = Usage()
         self.use_fallbacks = model in FALLBACK_MODELS
@@ -184,13 +207,20 @@ class Agent:
         s.log("customer", text=content, button=button, confirmation_signal=signal)
 
         history_mark = len(self.messages)
+        intents_before = set(self.loaded_intents)
+        new_intents = self._route(s, content, button) if self.router else []
         self.messages.append({"role": "user", "content": content or "(empty message)"})
-        self.messages.append({"role": "system", "content": s.facts_block()})
+        if new_intents:
+            self.messages.append({"role": "system", "content": [
+                {"type": "text", "text": s.facts_block()}, {"type": "text", "text": procedure_block(new_intents)}]})
+        else:
+            self.messages.append({"role": "system", "content": s.facts_block()})
 
         try:
             reply, resp_final, replaced = self._run_turn(s)
         except Exception:
             del self.messages[history_mark:]  # leave the history as it was, so the caller can retry this turn
+            self.loaded_intents = intents_before  # a retry must send those procedures again
             s.turn -= 1
             raise
 
@@ -219,6 +249,43 @@ class Agent:
         after = self.usage.as_dict()
         turn_usage = {k: (round(after[k] - usage_before[k], 5) if isinstance(after[k], (int, float)) else after[k]) for k in after}
         return TurnResult(reply=reply, options=options, card=card, handoff=s.handoff, events=s.trace[first_event:], usage=turn_usage)
+
+    def _route(self, s: Session, text: str, button: str | None) -> list[str]:
+        """Router on only: work out which procedures this turn needs. Returns the ones not sent before.
+
+        Code adds what the state already shows: an issued quote needs returns, a verified order needs order
+        status. A card button skips the router: the money turn gets no extra call and has nothing to classify.
+        """
+        forced = set()
+        if s.latest_quote() is not None:
+            forced.add("returns")
+        if s.verified_orders:
+            forced.add("order_status")
+        route, fallback, wanted = None, False, set()
+        if button is None:
+            route = self.router.classify(text, self._last_reply(s))
+            if route.usage is not None:
+                try:
+                    self.usage.add(route.model, route.usage, route.latency_ms)
+                except KeyError:  # no list price: treat it as a router failure rather than misreport the cost
+                    route.error = route.error or f"unpriced model {route.model}"
+            wanted, fallback = route.to_load(self.router.threshold)
+        new = sorted(((wanted | forced) & set(PROCEDURE_INTENTS)) - self.loaded_intents)
+        self.loaded_intents |= set(new)
+        s.log("route", skipped=route is None, intents=route.intents if route else [],
+              confidence=route.confidence if route else None, fallback=fallback, procedures=new,
+              loaded=sorted(self.loaded_intents), tools=route.tools if route else [],
+              route_error=route.error if route else None, model=route.model if route else None,
+              latency_ms=route.latency_ms if route else 0)
+        return new
+
+    @staticmethod
+    def _last_reply(s: Session) -> str:
+        for e in reversed(s.trace):
+            if e["kind"] == "agent":
+                opts = e.get("options") or []
+                return e["text"] + (f" [[options: {' | '.join(opts)}]]" if opts else "")
+        return ""
 
     def _run_turn(self, s: Session) -> tuple[str, object, bool]:
         """The model loop for one turn: call, run tools, repeat. Returns (reply text, final response or None,

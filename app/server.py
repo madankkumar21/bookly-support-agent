@@ -48,7 +48,8 @@ class ChatIn(BaseModel):
 def _public_event(e: dict) -> dict:
     """The trace the panel shows: what the agent did and what the code decided."""
     keep = {"turn", "kind", "tool", "input", "is_error", "allowed", "status", "reason", "quote_id", "signal",
-            "source", "model", "stop_reason", "latency_ms", "card"}
+            "source", "model", "stop_reason", "latency_ms", "card",
+            "skipped", "intents", "confidence", "fallback", "procedures", "route_error"}  # route rows
     out = {k: v for k, v in e.items() if k in keep}
     if e["kind"] == "tool_result":
         out["result"] = e["result"]

@@ -4,6 +4,7 @@
     uv run python -m evals.run_evals --k 5 --override returns.print_return_window_days=14 --label window14
     uv run python -m evals.run_evals --k 1 --model claude-opus-5-5 --label opus
     uv run python -m evals.run_evals --only R1,R10 --k 2
+    uv run python -m evals.run_evals --k 5 --router --label router   # intent router on (docs/ROUTER.md)
 
 Writes evals/results/<date>-<label>/: report.md, summary.json, transcripts.jsonl.
 """
@@ -29,6 +30,7 @@ from bookly.agent import Agent
 from bookly.backend import Backend
 from bookly.kb import render
 from bookly.policy import Policy
+from bookly.router import Router
 from evals.checks import check_run
 from evals.simulator import Simulator, SimulatorRefused
 
@@ -84,7 +86,8 @@ def run_one(scenario: dict, run_index: int, args, overrides: dict, client: anthr
     if budget.exhausted():
         return {"scenario": scenario["id"], "run": run_index, "skipped": "budget"}
     policy = Policy.load(overrides=overrides)
-    agent = Agent(backend=Backend.load(), policy=policy, client=client, model=args.model, effort=args.effort)
+    agent = Agent(backend=Backend.load(), policy=policy, client=client, model=args.model, effort=args.effort,
+                  router=Router() if args.router else None)
     sim = Simulator(scenario["persona"], scenario["opening"], client=client, model=args.sim_model)
     turns, error = [], None
     text, button = scenario["opening"].strip(), None
@@ -178,7 +181,8 @@ def summarize(scenarios: list[dict], runs: list[dict], args, overrides: dict) ->
     return {
         "config": {"model": args.model, "effort": args.effort, "sim_model": args.sim_model, "k": args.k,
                    "overrides": overrides, "date": datetime.now().isoformat(timespec="seconds"),
-                   "policy_clock": config.TODAY.isoformat(), "label": args.label},
+                   "policy_clock": config.TODAY.isoformat(), "label": args.label,
+                   "router": ({"model": config.ROUTER_MODEL, "threshold": config.ROUTER_THRESHOLD} if args.router else None)},
         "headline": {
             "scenarios": len(rows), "scenarios_pass_k": n_pass_k, "conversations": conversations,
             "wrong_refunds": wrong_total, "wrong_refund_upper_95": round(upper_wrong, 4) if upper_wrong is not None else None,
@@ -224,7 +228,9 @@ def write_report(out: Path, summary: dict, bc: dict) -> None:
         f"# Bookly agent eval: {c['label']}",
         "",
         f"Model `{c['model']}` (effort {c['effort']}), simulated customer `{c['sim_model']}`, k={c['k']}, "
-        f"policy overrides {c['overrides'] or 'none'}, clock {c['policy_clock']}, run {c['date']}.",
+        f"policy overrides {c['overrides'] or 'none'}, clock {c['policy_clock']}, run {c['date']}."
+        + (f" Intent router on (`{c['router']['model']}`, threshold {c['router']['threshold']}); its calls are "
+           "counted in agent cost, latency and API calls." if c.get("router") else " Intent router off."),
         "",
         "## Headline",
         f"- **{h['scenarios_pass_k']} of {h['scenarios']} scenarios pass all {c['k']} runs** (pass^{c['k']}).",
@@ -271,10 +277,13 @@ def main() -> None:
     ap.add_argument("--budget", type=float, default=35.0, help="hard cap in USD for this run")
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--label", default="sonnet")
+    ap.add_argument("--router", action="store_true", help="turn on the intent router (docs/ROUTER.md)")
     args = ap.parse_args()
 
     if not re.fullmatch(r"[A-Za-z0-9_-]+", args.label):
         ap.error("--label must be a plain name (letters, digits, - and _); it becomes a folder name")
+    if config.ROUTER_ENABLED and not args.router:
+        ap.error("BOOKLY_ROUTER=1 is set, so this run would not be router-off; pass --router or unset it")
     overrides = dict(o.split("=", 1) for o in args.override)
     scenarios = load_scenarios({x.strip() for x in args.only.split(",") if x.strip()} or None)
     client = config.make_client(timeout=120, max_retries=3)
