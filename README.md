@@ -149,9 +149,9 @@ Also decided, with reasons, in [docs/BUILD_LOG.md](docs/BUILD_LOG.md):
 ## Added after the review (2026-10-27)
 
 The review asked how intent routing works at about fifty intents, and how one message with several requests is handled. I built the router, off by default (`BOOKLY_ROUTER=1`), and measured it:
-- **On its own:** on 60 synthetic labelled messages, three runs each, it loaded the needed procedure in 180 of 180, with 94% exact labels. Every inexact answer added a procedure; none dropped one.
+- **On its own:** on 60 synthetic labelled messages, three runs each, it loaded the needed procedure in all 159 classifications that needed one, with 94% exact labels. Every inexact answer added a procedure; none dropped one.
 - **In the agent:** in same-day k=5 runs, 16 of 16 scenarios passed with the router on, with 0 wrong refunds, at 0.8 s more median latency and 3% more cost. At three intents that buys nothing, so it stays off. The case for it starts at dozens of procedures.
-- **Several requests in one message:** "return a damaged book, and recommend something similar" loads returns and other. In a live run, the agent took the return first and offered a person for the recommendation.
+- **Several requests in one message:** "return a damaged book, and recommend something similar" is labelled returns + other. In a [recorded live run](evals/results/2026-10-29-router-haiku/live_multi_request.txt), the agent asked for the return's order details and offered a person for the recommendation, in the same reply.
 
 Design, numbers and caveats: [docs/ROUTER.md](docs/ROUTER.md). The submitted version is tagged `submitted-2026-10-22`.
 

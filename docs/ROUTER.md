@@ -12,9 +12,11 @@ Added after the take-home review on 2026-10-27, where the panel asked how intent
 ## Results: the router on its own (2026-10-29, first run, no prompt changes after it)
 60 synthetic items × 3 runs = 180 classifications, Haiku 5.5, threshold 0.6. Full report: [evals/results/2026-10-29-router-haiku/report.md](../evals/results/2026-10-29-router-haiku/report.md).
 
+Re-graded from the saved runs after an independent review (`router_eval.py --rescore`). The first count, 180 of 180, included the 21 out-of-scope classifications, which need no procedure and so could not miss one. The result did not change.
+
 | What | Expected | Measured |
 |---|---|---|
-| Needed procedure loaded | ≥ 95% | **100%** (0 misses) |
+| Needed procedure loaded | ≥ 95% | **159 of 159** that needed one (0 misses) |
 | Missed the returns procedure | 0 | **0** |
 | Exact label match | ≥ 85% | 94% |
 | Fallback to all procedures | ≤ 10% | 2% |
@@ -40,7 +42,8 @@ The same 16-scenario suite as the headline run, router off and router on, run ba
 
 - **Outcomes are the same.** The one router-off failure (P1, run 3) came from the simulated customer, not the agent. It was told to ask two questions and asked a third, about first-time discounts. The agent correctly said it had no information and offered a person. So 16 of 16 with the router on does not show the router is better.
 - **What it costs at three intents:** about 0.8 s at the median, 1.8 s at p95, and 3% more per conversation. That buys nothing at this size, so the router stays off.
-- **A live check in the web UI:** "I want to return a damaged book, and can you also recommend something similar?" loaded returns and other (0.95). The agent asked for the order details for the return first, and said a person can help with the recommendation after.
+- **A recorded live run** ([live_multi_request.txt](../evals/results/2026-10-29-router-haiku/live_multi_request.txt)): the router labelled "I want to return a damaged book, and can you also recommend something similar?" as returns + other (0.95) and loaded the returns procedure. In the same reply, the agent asked for the order details for the return and offered a person for the recommendation. The next turn verified the order and showed the refund card.
+- **The remaining risk is a confident wrong label.** Uncertain answers widen to every procedure, but a confident wrong label narrows the prompt to the wrong one. The eval found none in 159 classifications that needed a procedure, and the agent adds the returns procedure whenever a quote exists, so a refund in progress cannot lose it.
 - Reports: [router on](../evals/results/2026-10-29-sonnet-k5-routeron/report.md), [router off](../evals/results/2026-10-29-sonnet-k5-routeroff/report.md).
 
 ## When to turn it on

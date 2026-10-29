@@ -6,12 +6,15 @@
     "items": 60,
     "date": "2026-10-29T01:08:10",
     "label": "haiku",
-    "set": "evals/router_set.yaml (synthetic)"
+    "set": "evals/router_set.yaml (synthetic)",
+    "rescored": "2026-10-29T01:33:21"
   },
   "headline": {
     "classifications": 180,
+    "needing_a_procedure": 159,
     "exact_match": 0.944,
     "covered": 1.0,
+    "covered_count": 159,
     "missed_needed_procedure": 0,
     "missed_returns": 0,
     "fallback_rate": 0.017,
@@ -62,7 +65,7 @@
     "out_of_scope": {
       "runs": 18,
       "exact": 1.0,
-      "covered": 1.0
+      "covered": null
     },
     "single": {
       "runs": 84,

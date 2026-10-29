@@ -3,7 +3,7 @@
 Model `claude-haiku-5-5`, k=3, threshold 0.6, 60 items from evals/router_set.yaml (synthetic), run 2026-10-29T01:08:10.
 
 ## Headline
-- **Needed procedure loaded in 100% of 180 classifications** (0 misses; 0 missed the returns procedure).
+- **Needed procedure loaded in 159 of the 159 classifications that needed one** (0 misses; 0 missed the returns procedure; 21 of 180 needed none, because the message was out of scope).
 - Exact label match 94%. Fallback to all procedures 2%. Loaded more than needed 4%.
 - Same answer on all 3 runs: 59/60 items. Router errors: 0.
 - Latency p50 1024 ms, p95 1827 ms. Cost $0.000075 per call, $0.0135 in total.
@@ -14,7 +14,7 @@ Model `claude-haiku-5-5`, k=3, threshold 0.6, 60 items from evals/router_set.yam
 | followup | 30 | 90% | 100% |
 | injection | 12 | 100% | 100% |
 | multi | 24 | 100% | 100% |
-| out_of_scope | 18 | 100% | 100% |
+| out_of_scope | 18 | 100% | none needed |
 | single | 84 | 99% | 100% |
 | vague | 12 | 50% | 100% |
 

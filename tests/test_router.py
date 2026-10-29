@@ -12,7 +12,7 @@ from types import SimpleNamespace as NS
 import pytest
 
 import app.server as server
-from bookly.agent import Agent, build_system_prompt
+from bookly.agent import Agent
 from bookly.router import PROCEDURE_INTENTS, SCHEMA, Route, Router
 from tests.test_agent_loop import ScriptedClient, resp, text, tool
 
@@ -53,11 +53,17 @@ def happy_path_steps():
 
 # ---- the agent with the router off or on ---------------------------------------------------------------------
 
-def test_router_off_system_prompt_is_unchanged():
-    agent = Agent(client=ScriptedClient([]))
+def test_router_off_prompt_and_turn_shape_are_unchanged():
+    agent = Agent(client=ScriptedClient([lambda m: resp(text("Hi! How can I help?"))]))
     assert agent.router is None
-    assert agent.system == build_system_prompt()
-    assert "# Procedure: returns and refunds" in agent.system
+    headers = ["# Procedure: where is my order", "# Procedure: policy questions", "# Procedure: returns and refunds"]
+    positions = [agent.system.index(h) for h in headers]
+    assert positions == sorted(positions)  # all three procedures, in file order, as submitted
+    assert "adds each procedure" not in agent.system
+    agent.handle("hi")
+    assert len(agent.client.requests) == 1  # no router call
+    assert isinstance(agent.messages[1]["content"], str) and agent.messages[1]["role"] == "system"
+    assert not [e for e in agent.session.trace if e["kind"] == "route"]
 
 
 def test_router_on_system_and_tools_stay_identical_across_turns():

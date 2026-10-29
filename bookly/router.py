@@ -7,10 +7,12 @@ the tool list stays fixed so prompt caching holds, and narrowing it would add no
 already refuses create_return without a confirmed quote. At about fifty intents, tool search with deferred
 tool loading is the cache-safe way to shrink the tool list.
 
-The router can only widen what loads, never make things worse. Low confidence, an error, an empty answer or a
-refusal all load every procedure, which is what the agent does with the router off. A prompt injection in the
-customer's text can at most add a procedure; it can never grant a permission, because the gate and the claim
-check do not depend on routing.
+Anything uncertain widens what loads: low confidence, an error, an empty answer or a refusal all load every
+procedure, which is what the agent does with the router off. The remaining risk is a confident wrong label,
+which narrows the prompt to the wrong procedure; evals/router_eval.py measures it, and the agent adds the
+procedures its session state already calls for, so a refund in progress keeps the returns procedure. A prompt
+injection in the customer's text can change which procedures load, but it can never grant a permission,
+because the gate and the claim check do not depend on routing.
 """
 
 from __future__ import annotations
