@@ -1,0 +1,47 @@
+{
+  "config": {
+    "model": "claude-sonnet-5-5",
+    "effort": "low",
+    "sim_model": "claude-haiku-5-5",
+    "jev_model": "jev-1.14.0",
+    "k": 1,
+    "label": "journeys-smoke",
+    "date": "2026-11-13T11:32:36",
+    "start_clock": "2026-10-10"
+  },
+  "headline": {
+    "journeys": 1,
+    "journeys_pass_k": 1,
+    "conversations": 2,
+    "wrong_refunds": 0,
+    "runner_errors": 0
+  },
+  "jev": {
+    "calls_by_purpose": {
+      "remember": 5,
+      "follow_up": 1
+    },
+    "latency_ms_p50_by_purpose": {
+      "remember": 132,
+      "follow_up": 112
+    },
+    "spend_usd": 0.000375
+  },
+  "operations": {
+    "agent_cost_total_usd": 0.0357,
+    "simulator_cost_usd": 0.0004,
+    "agent_cost_per_conversation_usd": 0.0178
+  },
+  "journeys": [
+    {
+      "id": "J6",
+      "title": "Follow-up on a refund, and the customer says it arrived",
+      "runs": 1,
+      "passes": 1,
+      "pass_k": true,
+      "errors": 0,
+      "notes": [],
+      "runner_errors": []
+    }
+  ]
+}

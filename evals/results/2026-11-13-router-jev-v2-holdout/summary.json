@@ -1,0 +1,144 @@
+{
+  "config": {
+    "model": "jev-1.14.0",
+    "k": 3,
+    "threshold": 0.7,
+    "items": 12,
+    "date": "2026-11-13T12:47:11",
+    "label": "jev-v2-holdout",
+    "set": "evals/router_holdout.yaml (synthetic)"
+  },
+  "headline": {
+    "classifications": 36,
+    "needing_a_procedure": 33,
+    "exact_match": 0.944,
+    "covered": 1.0,
+    "covered_count": 33,
+    "missed_needed_procedure": 0,
+    "missed_returns": 0,
+    "fallback_rate": 0.083,
+    "over_loaded_rate": 0.0,
+    "consistent_items": "11/12",
+    "errors": 0
+  },
+  "operations": {
+    "latency_ms_p50": 113,
+    "latency_ms_p95": 205,
+    "cost_per_call_usd": 3.716e-05,
+    "cost_total_usd": 0.0013
+  },
+  "recall": {
+    "order_status": {
+      "runs": 9,
+      "recall": 1.0
+    },
+    "returns": {
+      "runs": 12,
+      "recall": 1.0
+    },
+    "policy": {
+      "runs": 24,
+      "recall": 1.0
+    },
+    "other": {
+      "runs": 6,
+      "recall": 1.0
+    }
+  },
+  "by_kind": {
+    "multi": {
+      "runs": 15,
+      "exact": 1.0,
+      "covered": 1.0
+    },
+    "out_of_scope": {
+      "runs": 3,
+      "exact": 1.0,
+      "covered": null
+    },
+    "single": {
+      "runs": 18,
+      "exact": 0.889,
+      "covered": 1.0
+    }
+  },
+  "confidence_buckets": [
+    {
+      "confidence": "0.0-0.6",
+      "runs": 3,
+      "exact": 0.333
+    },
+    {
+      "confidence": "0.6-0.8",
+      "runs": 6,
+      "exact": 1.0
+    },
+    {
+      "confidence": "0.8-0.9",
+      "runs": 7,
+      "exact": 1.0
+    },
+    {
+      "confidence": "0.9-1.0",
+      "runs": 20,
+      "exact": 1.0
+    }
+  ],
+  "threshold_sweep": [
+    {
+      "threshold": 0.0,
+      "covered": 1.0,
+      "fallback": 0.0,
+      "missed_returns": 0
+    },
+    {
+      "threshold": 0.5,
+      "covered": 1.0,
+      "fallback": 0.0,
+      "missed_returns": 0
+    },
+    {
+      "threshold": 0.6,
+      "covered": 1.0,
+      "fallback": 0.083,
+      "missed_returns": 0
+    },
+    {
+      "threshold": 0.7,
+      "covered": 1.0,
+      "fallback": 0.083,
+      "missed_returns": 0
+    },
+    {
+      "threshold": 0.8,
+      "covered": 1.0,
+      "fallback": 0.25,
+      "missed_returns": 0
+    },
+    {
+      "threshold": 0.9,
+      "covered": 1.0,
+      "fallback": 0.444,
+      "missed_returns": 0
+    }
+  ],
+  "confusion_single_intent": {
+    "order_status": {
+      "order_status": 3
+    },
+    "other": {
+      "other": 3
+    },
+    "returns": {
+      "returns": 6
+    },
+    "policy": {
+      "policy": 7,
+      "policy,returns": 2
+    }
+  },
+  "misses": [],
+  "inexact_items": [
+    "H7"
+  ]
+}

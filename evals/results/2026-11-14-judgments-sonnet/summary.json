@@ -1,0 +1,116 @@
+{
+  "config": {
+    "model": "claude-sonnet-5-5",
+    "k": 2,
+    "label": "sonnet",
+    "date": "2026-11-14T23:44:06",
+    "set": "evals/judgment_set.yaml (synthetic)",
+    "bands": {
+      "yes": 0.7,
+      "no": 0.3,
+      "close_yes": 0.85
+    }
+  },
+  "headline": {
+    "runs": 159,
+    "errors": 5,
+    "outcome_accuracy": 0.987,
+    "wrong_direction": 0,
+    "cost_total_usd": 1.407184,
+    "held_out_runs": 8,
+    "held_out_correct": 8
+  },
+  "by_kind": {
+    "remember": {
+      "runs": 43,
+      "items": 22,
+      "outcome_accuracy": 1.0,
+      "outcome_accuracy_clear_items": 1.0,
+      "wrong_direction": 0,
+      "unsettled_rate": 0.0,
+      "same_outcome_every_run": "22/22",
+      "latency_ms_p50": 2685,
+      "input_tokens_per_call": 5151,
+      "cost_per_call_usd": 0.01422707
+    },
+    "follow_up": {
+      "runs": 44,
+      "items": 22,
+      "outcome_accuracy": 1.0,
+      "outcome_accuracy_clear_items": 1.0,
+      "wrong_direction": 0,
+      "unsettled_rate": 0.091,
+      "same_outcome_every_run": "22/22",
+      "latency_ms_p50": 1316,
+      "input_tokens_per_call": 760,
+      "cost_per_call_usd": 0.00173155
+    },
+    "fit": {
+      "runs": 24,
+      "items": 12,
+      "outcome_accuracy": 1.0,
+      "outcome_accuracy_clear_items": 1.0,
+      "wrong_direction": 0,
+      "unsettled_rate": 0.0,
+      "same_outcome_every_run": "12/12",
+      "latency_ms_p50": 1495,
+      "input_tokens_per_call": 711,
+      "cost_per_call_usd": 0.00152917
+    },
+    "mood": {
+      "runs": 48,
+      "items": 24,
+      "outcome_accuracy": 0.958,
+      "outcome_accuracy_clear_items": 0.938,
+      "wrong_direction": 0,
+      "mood_label_accuracy": 0.958,
+      "unsettled_rate": 0.125,
+      "same_outcome_every_run": "24/24",
+      "latency_ms_p50": 2703,
+      "input_tokens_per_call": 5151,
+      "cost_per_call_usd": 0.01421942
+    }
+  },
+  "misses": [
+    {
+      "id": "M01",
+      "kind": "mood",
+      "run": 0,
+      "hard": false,
+      "input": "OK, thanks anyway.",
+      "expect": [
+        "none"
+      ],
+      "outcome": "acknowledge",
+      "shown": {
+        "calm": 1.0,
+        "concerned": 0.0,
+        "angry": 0.0,
+        "gave_up": 0.5,
+        "said_solved": 0.0
+      },
+      "wrong_direction": false,
+      "why": "mood calm"
+    },
+    {
+      "id": "M01",
+      "kind": "mood",
+      "run": 1,
+      "hard": false,
+      "input": "OK, thanks anyway.",
+      "expect": [
+        "none"
+      ],
+      "outcome": "acknowledge",
+      "shown": {
+        "calm": 1.0,
+        "concerned": 0.0,
+        "angry": 0.0,
+        "gave_up": 0.5,
+        "said_solved": 0.0
+      },
+      "wrong_direction": false,
+      "why": "mood calm"
+    }
+  ]
+}

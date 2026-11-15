@@ -1,0 +1,252 @@
+{
+  "config": {
+    "model": "jev-1.14.0",
+    "k": 2,
+    "label": "v3",
+    "date": "2026-11-14T23:41:20",
+    "set": "evals/judgment_set.yaml (synthetic)",
+    "bands": {
+      "yes": 0.7,
+      "no": 0.3,
+      "close_yes": 0.85
+    }
+  },
+  "headline": {
+    "runs": 164,
+    "errors": 0,
+    "outcome_accuracy": 0.939,
+    "wrong_direction": 0,
+    "cost_total_usd": 0.009807,
+    "held_out_runs": 8,
+    "held_out_correct": 8
+  },
+  "by_kind": {
+    "remember": {
+      "runs": 48,
+      "items": 24,
+      "outcome_accuracy": 1.0,
+      "outcome_accuracy_clear_items": 1.0,
+      "wrong_direction": 0,
+      "unsettled_rate": 0.0,
+      "same_outcome_every_run": "24/24",
+      "latency_ms_p50": 90,
+      "input_tokens_per_call": 2098,
+      "cost_per_call_usd": 8.812e-05
+    },
+    "follow_up": {
+      "runs": 44,
+      "items": 22,
+      "outcome_accuracy": 1.0,
+      "outcome_accuracy_clear_items": 1.0,
+      "wrong_direction": 0,
+      "unsettled_rate": 0.136,
+      "same_outcome_every_run": "22/22",
+      "latency_ms_p50": 83,
+      "input_tokens_per_call": 469,
+      "cost_per_call_usd": 1.972e-05
+    },
+    "fit": {
+      "runs": 24,
+      "items": 12,
+      "outcome_accuracy": 0.833,
+      "outcome_accuracy_clear_items": 0.909,
+      "wrong_direction": 0,
+      "unsettled_rate": 0.167,
+      "same_outcome_every_run": "12/12",
+      "latency_ms_p50": 74,
+      "input_tokens_per_call": 476,
+      "cost_per_call_usd": 2e-05
+    },
+    "mood": {
+      "runs": 48,
+      "items": 24,
+      "outcome_accuracy": 0.875,
+      "outcome_accuracy_clear_items": 0.938,
+      "wrong_direction": 0,
+      "mood_label_accuracy": 0.792,
+      "unsettled_rate": 0.062,
+      "same_outcome_every_run": "24/24",
+      "latency_ms_p50": 90,
+      "input_tokens_per_call": 2098,
+      "cost_per_call_usd": 8.812e-05
+    }
+  },
+  "misses": [
+    {
+      "id": "P09",
+      "kind": "fit",
+      "run": 0,
+      "hard": true,
+      "input": "['The Midnight Library'] -> A Man Called Ove",
+      "expect": true,
+      "outcome": "unsettled",
+      "shown": {
+        "fit": 0.66
+      },
+      "wrong_direction": false,
+      "why": ""
+    },
+    {
+      "id": "P09",
+      "kind": "fit",
+      "run": 1,
+      "hard": true,
+      "input": "['The Midnight Library'] -> A Man Called Ove",
+      "expect": true,
+      "outcome": "unsettled",
+      "shown": {
+        "fit": 0.65
+      },
+      "wrong_direction": false,
+      "why": ""
+    },
+    {
+      "id": "P12",
+      "kind": "fit",
+      "run": 0,
+      "hard": false,
+      "input": "['Fourth Wing'] -> The Invisible Life of Addie LaRue",
+      "expect": true,
+      "outcome": "unsettled",
+      "shown": {
+        "fit": 0.56
+      },
+      "wrong_direction": false,
+      "why": ""
+    },
+    {
+      "id": "P12",
+      "kind": "fit",
+      "run": 1,
+      "hard": false,
+      "input": "['Fourth Wing'] -> The Invisible Life of Addie LaRue",
+      "expect": true,
+      "outcome": "unsettled",
+      "shown": {
+        "fit": 0.56
+      },
+      "wrong_direction": false,
+      "why": ""
+    },
+    {
+      "id": "M01",
+      "kind": "mood",
+      "run": 0,
+      "hard": false,
+      "input": "OK, thanks anyway.",
+      "expect": [
+        "none"
+      ],
+      "outcome": "acknowledge",
+      "shown": {
+        "calm": 0.29,
+        "concerned": 0.71,
+        "angry": 0.0,
+        "gave_up": 0.29,
+        "said_solved": 0.08
+      },
+      "wrong_direction": false,
+      "why": "mood concerned"
+    },
+    {
+      "id": "M01",
+      "kind": "mood",
+      "run": 1,
+      "hard": false,
+      "input": "OK, thanks anyway.",
+      "expect": [
+        "none"
+      ],
+      "outcome": "acknowledge",
+      "shown": {
+        "calm": 0.26,
+        "concerned": 0.74,
+        "angry": 0.0,
+        "gave_up": 0.31,
+        "said_solved": 0.07
+      },
+      "wrong_direction": false,
+      "why": "mood concerned"
+    },
+    {
+      "id": "M19",
+      "kind": "mood",
+      "run": 0,
+      "hard": true,
+      "input": "Can you check on my order of the book I HATE EVERYTHING ABOUT YOU?",
+      "expect": [
+        "none"
+      ],
+      "outcome": "acknowledge",
+      "shown": {
+        "calm": 0.56,
+        "concerned": 0.28,
+        "angry": 0.16,
+        "gave_up": 0.02,
+        "said_solved": 0.02
+      },
+      "wrong_direction": false,
+      "why": "mood concerned"
+    },
+    {
+      "id": "M19",
+      "kind": "mood",
+      "run": 1,
+      "hard": true,
+      "input": "Can you check on my order of the book I HATE EVERYTHING ABOUT YOU?",
+      "expect": [
+        "none"
+      ],
+      "outcome": "acknowledge",
+      "shown": {
+        "calm": 0.59,
+        "concerned": 0.27,
+        "angry": 0.14,
+        "gave_up": 0.02,
+        "said_solved": 0.01
+      },
+      "wrong_direction": false,
+      "why": "mood concerned"
+    },
+    {
+      "id": "M22",
+      "kind": "mood",
+      "run": 0,
+      "hard": true,
+      "input": "I don't want to give up on this book. Can I exchange it for the paperback?",
+      "expect": [
+        "none"
+      ],
+      "outcome": "acknowledge",
+      "shown": {
+        "calm": 0.29,
+        "concerned": 0.71,
+        "angry": 0.0,
+        "gave_up": 0.02,
+        "said_solved": 0.01
+      },
+      "wrong_direction": false,
+      "why": "mood concerned"
+    },
+    {
+      "id": "M22",
+      "kind": "mood",
+      "run": 1,
+      "hard": true,
+      "input": "I don't want to give up on this book. Can I exchange it for the paperback?",
+      "expect": [
+        "none"
+      ],
+      "outcome": "acknowledge",
+      "shown": {
+        "calm": 0.26,
+        "concerned": 0.74,
+        "angry": 0.0,
+        "gave_up": 0.02,
+        "said_solved": 0.01
+      },
+      "wrong_direction": false,
+      "why": "mood concerned"
+    }
+  ]
+}

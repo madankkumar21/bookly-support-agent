@@ -1,0 +1,70 @@
+{
+  "config": {
+    "model": "claude-sonnet-5-5",
+    "effort": "low",
+    "sim_model": "claude-haiku-5-5",
+    "jev_model": "jev-1.14.0",
+    "k": 3,
+    "label": "journeys-v4-contact",
+    "date": "2026-11-14T23:42:38",
+    "start_clock": "2026-10-10"
+  },
+  "headline": {
+    "journeys": 3,
+    "journeys_pass_k": 2,
+    "conversations": 18,
+    "wrong_refunds": 0,
+    "runner_errors": 0
+  },
+  "jev": {
+    "calls_by_purpose": {
+      "remember": 50,
+      "mood": 50
+    },
+    "latency_ms_p50_by_purpose": {
+      "remember": 90
+    },
+    "spend_usd": 0.004442
+  },
+  "operations": {
+    "agent_cost_total_usd": 0.279,
+    "simulator_cost_usd": 0.0046,
+    "agent_cost_per_conversation_usd": 0.0155
+  },
+  "journeys": [
+    {
+      "id": "J8",
+      "title": "Refused, leaves angry, comes back - a person is brought in at once, and still no refund",
+      "runs": 3,
+      "passes": 2,
+      "pass_k": false,
+      "errors": 0,
+      "notes": [
+        "session 1: handoff expected=False got=True",
+        "session 2: return_contact: expected early_escalation, got ['priority_handoff']",
+        "tickets_total: expected 1, got 2"
+      ],
+      "runner_errors": []
+    },
+    {
+      "id": "J9",
+      "title": "A hand-off that nobody answered becomes a priority ticket when the customer comes back",
+      "runs": 3,
+      "passes": 3,
+      "pass_k": true,
+      "errors": 0,
+      "notes": [],
+      "runner_errors": []
+    },
+    {
+      "id": "J10",
+      "title": "Refused, leaves calm, comes back - nothing changes (the control for J8)",
+      "runs": 3,
+      "passes": 3,
+      "pass_k": true,
+      "errors": 0,
+      "notes": [],
+      "runner_errors": []
+    }
+  ]
+}

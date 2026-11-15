@@ -1,0 +1,566 @@
+{
+  "config": {
+    "model": "claude-haiku-5-5",
+    "k": 2,
+    "label": "haiku-v3",
+    "date": "2026-11-14T23:42:27",
+    "set": "evals/judgment_set.yaml (synthetic)",
+    "bands": {
+      "yes": 0.7,
+      "no": 0.3,
+      "close_yes": 0.85
+    }
+  },
+  "headline": {
+    "runs": 164,
+    "errors": 0,
+    "outcome_accuracy": 0.927,
+    "wrong_direction": 2,
+    "cost_total_usd": 0.07529,
+    "held_out_runs": 8,
+    "held_out_correct": 0
+  },
+  "by_kind": {
+    "remember": {
+      "runs": 48,
+      "items": 24,
+      "outcome_accuracy": 0.792,
+      "outcome_accuracy_clear_items": 0.773,
+      "wrong_direction": 0,
+      "unsettled_rate": 0.042,
+      "same_outcome_every_run": "24/24",
+      "latency_ms_p50": 2196,
+      "input_tokens_per_call": 5151,
+      "cost_per_call_usd": 0.00073123
+    },
+    "follow_up": {
+      "runs": 44,
+      "items": 22,
+      "outcome_accuracy": 1.0,
+      "outcome_accuracy_clear_items": 1.0,
+      "wrong_direction": 0,
+      "unsettled_rate": 0.091,
+      "same_outcome_every_run": "22/22",
+      "latency_ms_p50": 1048,
+      "input_tokens_per_call": 760,
+      "cost_per_call_usd": 8.704e-05
+    },
+    "fit": {
+      "runs": 24,
+      "items": 12,
+      "outcome_accuracy": 1.0,
+      "outcome_accuracy_clear_items": 1.0,
+      "wrong_direction": 0,
+      "unsettled_rate": 0.0,
+      "same_outcome_every_run": "12/12",
+      "latency_ms_p50": 1642,
+      "input_tokens_per_call": 711,
+      "cost_per_call_usd": 7.646e-05
+    },
+    "mood": {
+      "runs": 48,
+      "items": 24,
+      "outcome_accuracy": 0.958,
+      "outcome_accuracy_clear_items": 1.0,
+      "wrong_direction": 2,
+      "mood_label_accuracy": 0.875,
+      "unsettled_rate": 0.042,
+      "same_outcome_every_run": "24/24",
+      "latency_ms_p50": 2006,
+      "input_tokens_per_call": 5151,
+      "cost_per_call_usd": 0.00071929
+    }
+  },
+  "misses": [
+    {
+      "id": "M19",
+      "kind": "mood",
+      "run": 0,
+      "hard": true,
+      "input": "Can you check on my order of the book I HATE EVERYTHING ABOUT YOU?",
+      "expect": [
+        "none"
+      ],
+      "outcome": "early_escalation",
+      "shown": {
+        "calm": 0.0,
+        "concerned": 0.0,
+        "angry": 1.0,
+        "gave_up": 0.0,
+        "said_solved": 0.0
+      },
+      "wrong_direction": true,
+      "why": "mood angry"
+    },
+    {
+      "id": "M19",
+      "kind": "mood",
+      "run": 1,
+      "hard": true,
+      "input": "Can you check on my order of the book I HATE EVERYTHING ABOUT YOU?",
+      "expect": [
+        "none"
+      ],
+      "outcome": "early_escalation",
+      "shown": {
+        "calm": 0.0,
+        "concerned": 0.0,
+        "angry": 1.0,
+        "gave_up": 0.0,
+        "said_solved": 0.0
+      },
+      "wrong_direction": true,
+      "why": "mood angry"
+    },
+    {
+      "id": "R05",
+      "kind": "remember",
+      "run": 0,
+      "hard": false,
+      "input": "Memoirs are my favourite, I read about one a month.",
+      "expect": {
+        "likes": [
+          "memoir_biography"
+        ]
+      },
+      "outcome": {
+        "likes": [],
+        "dislikes": []
+      },
+      "shown": {
+        "lasting": 1.0,
+        "special_treatment": 0.0,
+        "likes:literary_fiction": 0.5,
+        "dislikes:literary_fiction": 0.5,
+        "likes:science_fiction": 0.5,
+        "dislikes:science_fiction": 0.5,
+        "likes:fantasy": 0.5,
+        "dislikes:fantasy": 0.5,
+        "likes:romance": 0.5,
+        "dislikes:romance": 0.5,
+        "likes:historical_fiction": 0.5,
+        "dislikes:historical_fiction": 0.5,
+        "likes:mystery_thriller:mysteries": 0.5,
+        "dislikes:mystery_thriller:mysteries": 0.5,
+        "likes:mystery_thriller:thrillers": 0.5,
+        "dislikes:mystery_thriller:thrillers": 0.5,
+        "likes:horror": 0.5,
+        "dislikes:horror": 0.5,
+        "likes:memoir_biography:memoirs": 1.0,
+        "likes:memoir_biography:biographies": 0.5,
+        "dislikes:memoir_biography:biographies": 0.5,
+        "likes:popular_science": 0.5,
+        "dislikes:popular_science": 0.5,
+        "likes:self_help": 0.5,
+        "dislikes:self_help": 0.5
+      },
+      "wrong_direction": false,
+      "why": "a taste was stated, but no genre on the list was settled"
+    },
+    {
+      "id": "R05",
+      "kind": "remember",
+      "run": 1,
+      "hard": false,
+      "input": "Memoirs are my favourite, I read about one a month.",
+      "expect": {
+        "likes": [
+          "memoir_biography"
+        ]
+      },
+      "outcome": {
+        "likes": [],
+        "dislikes": []
+      },
+      "shown": {
+        "lasting": 1.0,
+        "special_treatment": 0.0,
+        "likes:literary_fiction": 0.5,
+        "dislikes:literary_fiction": 0.5,
+        "likes:science_fiction": 0.5,
+        "dislikes:science_fiction": 0.5,
+        "likes:fantasy": 0.5,
+        "dislikes:fantasy": 0.5,
+        "likes:romance": 0.5,
+        "dislikes:romance": 0.5,
+        "likes:historical_fiction": 0.5,
+        "dislikes:historical_fiction": 0.5,
+        "likes:mystery_thriller:mysteries": 0.5,
+        "dislikes:mystery_thriller:mysteries": 0.5,
+        "likes:mystery_thriller:thrillers": 0.5,
+        "dislikes:mystery_thriller:thrillers": 0.5,
+        "likes:horror": 0.5,
+        "dislikes:horror": 0.5,
+        "likes:memoir_biography:memoirs": 1.0,
+        "likes:memoir_biography:biographies": 0.5,
+        "dislikes:memoir_biography:biographies": 0.5,
+        "likes:popular_science": 0.5,
+        "dislikes:popular_science": 0.5,
+        "likes:self_help": 0.5,
+        "dislikes:self_help": 0.5
+      },
+      "wrong_direction": false,
+      "why": "a taste was stated, but no genre on the list was settled"
+    },
+    {
+      "id": "R21",
+      "kind": "remember",
+      "run": 0,
+      "hard": false,
+      "input": "I read a lot of biographies.",
+      "expect": {
+        "likes": [
+          "memoir_biography"
+        ]
+      },
+      "outcome": {
+        "likes": [],
+        "dislikes": []
+      },
+      "shown": {
+        "lasting": 1.0,
+        "special_treatment": 0.0,
+        "likes:literary_fiction": 0.5,
+        "dislikes:literary_fiction": 0.5,
+        "likes:science_fiction": 0.5,
+        "dislikes:science_fiction": 0.5,
+        "likes:fantasy": 0.5,
+        "dislikes:fantasy": 0.5,
+        "likes:romance": 0.5,
+        "dislikes:romance": 0.5,
+        "likes:historical_fiction": 0.5,
+        "dislikes:historical_fiction": 0.5,
+        "likes:mystery_thriller:mysteries": 0.5,
+        "dislikes:mystery_thriller:mysteries": 0.5,
+        "likes:mystery_thriller:thrillers": 0.5,
+        "dislikes:mystery_thriller:thrillers": 0.5,
+        "likes:horror": 0.5,
+        "dislikes:horror": 0.5,
+        "likes:memoir_biography:memoirs": 0.5,
+        "dislikes:memoir_biography:memoirs": 0.5,
+        "likes:memoir_biography:biographies": 1.0,
+        "likes:popular_science": 0.5,
+        "dislikes:popular_science": 0.5,
+        "likes:self_help": 0.5,
+        "dislikes:self_help": 0.5
+      },
+      "wrong_direction": false,
+      "why": "a taste was stated, but no genre on the list was settled"
+    },
+    {
+      "id": "R21",
+      "kind": "remember",
+      "run": 1,
+      "hard": false,
+      "input": "I read a lot of biographies.",
+      "expect": {
+        "likes": [
+          "memoir_biography"
+        ]
+      },
+      "outcome": {
+        "likes": [],
+        "dislikes": []
+      },
+      "shown": {
+        "lasting": 1.0,
+        "special_treatment": 0.0,
+        "likes:literary_fiction": 0.5,
+        "dislikes:literary_fiction": 0.5,
+        "likes:science_fiction": 0.5,
+        "dislikes:science_fiction": 0.5,
+        "likes:fantasy": 0.5,
+        "dislikes:fantasy": 0.5,
+        "likes:romance": 0.5,
+        "dislikes:romance": 0.5,
+        "likes:historical_fiction": 0.5,
+        "dislikes:historical_fiction": 0.5,
+        "likes:mystery_thriller:mysteries": 0.5,
+        "dislikes:mystery_thriller:mysteries": 0.5,
+        "likes:mystery_thriller:thrillers": 0.5,
+        "dislikes:mystery_thriller:thrillers": 0.5,
+        "likes:horror": 0.5,
+        "dislikes:horror": 0.5,
+        "likes:memoir_biography:memoirs": 0.5,
+        "dislikes:memoir_biography:memoirs": 0.5,
+        "likes:memoir_biography:biographies": 1.0,
+        "likes:popular_science": 0.5,
+        "dislikes:popular_science": 0.5,
+        "likes:self_help": 0.5,
+        "dislikes:self_help": 0.5
+      },
+      "wrong_direction": false,
+      "why": "a taste was stated, but no genre on the list was settled"
+    },
+    {
+      "id": "R22",
+      "kind": "remember",
+      "run": 0,
+      "hard": false,
+      "input": "I love a good thriller.",
+      "expect": {
+        "likes": [
+          "mystery_thriller"
+        ]
+      },
+      "outcome": {
+        "likes": [],
+        "dislikes": []
+      },
+      "shown": {
+        "lasting": 1.0,
+        "special_treatment": 0.0,
+        "likes:literary_fiction": 0.5,
+        "dislikes:literary_fiction": 0.5,
+        "likes:science_fiction": 0.5,
+        "dislikes:science_fiction": 0.5,
+        "likes:fantasy": 0.5,
+        "dislikes:fantasy": 0.5,
+        "likes:romance": 0.5,
+        "dislikes:romance": 0.5,
+        "likes:historical_fiction": 0.5,
+        "dislikes:historical_fiction": 0.5,
+        "likes:mystery_thriller:mysteries": 0.5,
+        "dislikes:mystery_thriller:mysteries": 0.5,
+        "likes:mystery_thriller:thrillers": 1.0,
+        "likes:horror": 0.5,
+        "dislikes:horror": 0.5,
+        "likes:memoir_biography:memoirs": 0.5,
+        "dislikes:memoir_biography:memoirs": 0.5,
+        "likes:memoir_biography:biographies": 0.5,
+        "dislikes:memoir_biography:biographies": 0.5,
+        "likes:popular_science": 0.5,
+        "dislikes:popular_science": 0.5,
+        "likes:self_help": 0.5,
+        "dislikes:self_help": 0.5
+      },
+      "wrong_direction": false,
+      "why": "a taste was stated, but no genre on the list was settled"
+    },
+    {
+      "id": "R22",
+      "kind": "remember",
+      "run": 1,
+      "hard": false,
+      "input": "I love a good thriller.",
+      "expect": {
+        "likes": [
+          "mystery_thriller"
+        ]
+      },
+      "outcome": {
+        "likes": [],
+        "dislikes": []
+      },
+      "shown": {
+        "lasting": 1.0,
+        "special_treatment": 0.0,
+        "likes:literary_fiction": 0.5,
+        "dislikes:literary_fiction": 0.5,
+        "likes:science_fiction": 0.5,
+        "dislikes:science_fiction": 0.5,
+        "likes:fantasy": 0.5,
+        "dislikes:fantasy": 0.5,
+        "likes:romance": 0.5,
+        "dislikes:romance": 0.5,
+        "likes:historical_fiction": 0.5,
+        "dislikes:historical_fiction": 0.5,
+        "likes:mystery_thriller:mysteries": 0.5,
+        "dislikes:mystery_thriller:mysteries": 0.5,
+        "likes:mystery_thriller:thrillers": 1.0,
+        "likes:horror": 0.5,
+        "dislikes:horror": 0.5,
+        "likes:memoir_biography:memoirs": 0.5,
+        "dislikes:memoir_biography:memoirs": 0.5,
+        "likes:memoir_biography:biographies": 0.5,
+        "dislikes:memoir_biography:biographies": 0.5,
+        "likes:popular_science": 0.5,
+        "dislikes:popular_science": 0.5,
+        "likes:self_help": 0.5,
+        "dislikes:self_help": 0.5
+      },
+      "wrong_direction": false,
+      "why": "a taste was stated, but no genre on the list was settled"
+    },
+    {
+      "id": "R23",
+      "kind": "remember",
+      "run": 0,
+      "hard": false,
+      "input": "I'm not into mysteries at all.",
+      "expect": {
+        "dislikes": [
+          "mystery_thriller"
+        ]
+      },
+      "outcome": {
+        "likes": [],
+        "dislikes": []
+      },
+      "shown": {
+        "lasting": 0.0,
+        "special_treatment": 0.0,
+        "likes:literary_fiction": 0.5,
+        "dislikes:literary_fiction": 0.5,
+        "likes:science_fiction": 0.5,
+        "dislikes:science_fiction": 0.5,
+        "likes:fantasy": 0.5,
+        "dislikes:fantasy": 0.5,
+        "likes:romance": 0.5,
+        "dislikes:romance": 0.5,
+        "likes:historical_fiction": 0.5,
+        "dislikes:historical_fiction": 0.5,
+        "dislikes:mystery_thriller:mysteries": 1.0,
+        "likes:mystery_thriller:thrillers": 0.5,
+        "dislikes:mystery_thriller:thrillers": 0.5,
+        "likes:horror": 0.5,
+        "dislikes:horror": 0.5,
+        "likes:memoir_biography:memoirs": 0.5,
+        "dislikes:memoir_biography:memoirs": 0.5,
+        "likes:memoir_biography:biographies": 0.5,
+        "dislikes:memoir_biography:biographies": 0.5,
+        "likes:popular_science": 0.5,
+        "dislikes:popular_science": 0.5,
+        "likes:self_help": 0.5,
+        "dislikes:self_help": 0.5
+      },
+      "wrong_direction": false,
+      "why": "no lasting taste stated (no)"
+    },
+    {
+      "id": "R23",
+      "kind": "remember",
+      "run": 1,
+      "hard": false,
+      "input": "I'm not into mysteries at all.",
+      "expect": {
+        "dislikes": [
+          "mystery_thriller"
+        ]
+      },
+      "outcome": {
+        "likes": [],
+        "dislikes": []
+      },
+      "shown": {
+        "lasting": 0.0,
+        "special_treatment": 0.0,
+        "likes:literary_fiction": 0.5,
+        "dislikes:literary_fiction": 0.5,
+        "likes:science_fiction": 0.5,
+        "dislikes:science_fiction": 0.5,
+        "likes:fantasy": 0.5,
+        "dislikes:fantasy": 0.5,
+        "likes:romance": 0.5,
+        "dislikes:romance": 0.5,
+        "likes:historical_fiction": 0.5,
+        "dislikes:historical_fiction": 0.5,
+        "dislikes:mystery_thriller:mysteries": 1.0,
+        "likes:mystery_thriller:thrillers": 0.5,
+        "dislikes:mystery_thriller:thrillers": 0.5,
+        "likes:horror": 0.5,
+        "dislikes:horror": 0.5,
+        "likes:memoir_biography:memoirs": 0.5,
+        "dislikes:memoir_biography:memoirs": 0.5,
+        "likes:memoir_biography:biographies": 0.5,
+        "dislikes:memoir_biography:biographies": 0.5,
+        "likes:popular_science": 0.5,
+        "dislikes:popular_science": 0.5,
+        "likes:self_help": 0.5,
+        "dislikes:self_help": 0.5
+      },
+      "wrong_direction": false,
+      "why": "no lasting taste stated (no)"
+    },
+    {
+      "id": "R24",
+      "kind": "remember",
+      "run": 0,
+      "hard": false,
+      "input": "Biographies bore me.",
+      "expect": {
+        "dislikes": [
+          "memoir_biography"
+        ]
+      },
+      "outcome": {
+        "likes": [],
+        "dislikes": []
+      },
+      "shown": {
+        "lasting": 1.0,
+        "special_treatment": 0.0,
+        "likes:literary_fiction": 0.5,
+        "dislikes:literary_fiction": 0.5,
+        "likes:science_fiction": 0.5,
+        "dislikes:science_fiction": 0.5,
+        "likes:fantasy": 0.5,
+        "dislikes:fantasy": 0.5,
+        "likes:romance": 0.5,
+        "dislikes:romance": 0.5,
+        "likes:historical_fiction": 0.5,
+        "dislikes:historical_fiction": 0.5,
+        "likes:mystery_thriller:mysteries": 0.5,
+        "dislikes:mystery_thriller:mysteries": 0.5,
+        "likes:mystery_thriller:thrillers": 0.5,
+        "dislikes:mystery_thriller:thrillers": 0.5,
+        "likes:horror": 0.5,
+        "dislikes:horror": 0.5,
+        "likes:memoir_biography:memoirs": 0.5,
+        "dislikes:memoir_biography:memoirs": 0.5,
+        "dislikes:memoir_biography:biographies": 1.0,
+        "likes:popular_science": 0.5,
+        "dislikes:popular_science": 0.5,
+        "likes:self_help": 0.5,
+        "dislikes:self_help": 0.5
+      },
+      "wrong_direction": false,
+      "why": "a taste was stated, but no genre on the list was settled"
+    },
+    {
+      "id": "R24",
+      "kind": "remember",
+      "run": 1,
+      "hard": false,
+      "input": "Biographies bore me.",
+      "expect": {
+        "dislikes": [
+          "memoir_biography"
+        ]
+      },
+      "outcome": {
+        "likes": [],
+        "dislikes": []
+      },
+      "shown": {
+        "lasting": 1.0,
+        "special_treatment": 0.0,
+        "likes:literary_fiction": 0.5,
+        "dislikes:literary_fiction": 0.5,
+        "likes:science_fiction": 0.5,
+        "dislikes:science_fiction": 0.5,
+        "likes:fantasy": 0.5,
+        "dislikes:fantasy": 0.5,
+        "likes:romance": 0.5,
+        "dislikes:romance": 0.5,
+        "likes:historical_fiction": 0.5,
+        "dislikes:historical_fiction": 0.5,
+        "likes:mystery_thriller:mysteries": 0.5,
+        "dislikes:mystery_thriller:mysteries": 0.5,
+        "likes:mystery_thriller:thrillers": 0.5,
+        "dislikes:mystery_thriller:thrillers": 0.5,
+        "likes:horror": 0.5,
+        "dislikes:horror": 0.5,
+        "likes:memoir_biography:memoirs": 0.5,
+        "dislikes:memoir_biography:memoirs": 0.5,
+        "dislikes:memoir_biography:biographies": 1.0,
+        "likes:popular_science": 0.5,
+        "dislikes:popular_science": 0.5,
+        "likes:self_help": 0.5,
+        "dislikes:self_help": 0.5
+      },
+      "wrong_direction": false,
+      "why": "a taste was stated, but no genre on the list was settled"
+    }
+  ]
+}

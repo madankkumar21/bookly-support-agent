@@ -1,0 +1,47 @@
+{
+  "config": {
+    "model": "claude-sonnet-5-5",
+    "effort": "low",
+    "sim_model": "claude-haiku-5-5",
+    "jev_model": "jev-1.14.0",
+    "k": 3,
+    "label": "journeys-v3-j1",
+    "date": "2026-11-13T17:58:56",
+    "start_clock": "2026-10-10"
+  },
+  "headline": {
+    "journeys": 1,
+    "journeys_pass_k": 1,
+    "conversations": 6,
+    "wrong_refunds": 0,
+    "runner_errors": 0
+  },
+  "jev": {
+    "calls_by_purpose": {
+      "remember": 18,
+      "recommend": 3
+    },
+    "latency_ms_p50_by_purpose": {
+      "remember": 112,
+      "recommend": 112
+    },
+    "spend_usd": 0.001944
+  },
+  "operations": {
+    "agent_cost_total_usd": 0.1389,
+    "simulator_cost_usd": 0.0018,
+    "agent_cost_per_conversation_usd": 0.0231
+  },
+  "journeys": [
+    {
+      "id": "J1",
+      "title": "Recommend from history, in a later conversation",
+      "runs": 3,
+      "passes": 3,
+      "pass_k": true,
+      "errors": 0,
+      "notes": [],
+      "runner_errors": []
+    }
+  ]
+}

@@ -1,0 +1,214 @@
+{
+  "config": {
+    "model": "jev-1.14.0",
+    "k": 3,
+    "threshold": 0.7,
+    "items": 60,
+    "date": "2026-11-13T11:30:49",
+    "label": "jev",
+    "set": "evals/router_set.yaml (synthetic)"
+  },
+  "headline": {
+    "classifications": 180,
+    "needing_a_procedure": 159,
+    "exact_match": 0.867,
+    "covered": 0.981,
+    "covered_count": 156,
+    "missed_needed_procedure": 3,
+    "missed_returns": 0,
+    "fallback_rate": 0.233,
+    "over_loaded_rate": 0.0,
+    "consistent_items": "58/60",
+    "errors": 0
+  },
+  "operations": {
+    "latency_ms_p50": 91,
+    "latency_ms_p95": 163,
+    "cost_per_call_usd": 3.194e-05,
+    "cost_total_usd": 0.0057
+  },
+  "recall": {
+    "order_status": {
+      "runs": 54,
+      "recall": 1.0
+    },
+    "returns": {
+      "runs": 75,
+      "recall": 0.96
+    },
+    "policy": {
+      "runs": 45,
+      "recall": 0.8
+    },
+    "other": {
+      "runs": 27,
+      "recall": 1.0
+    }
+  },
+  "by_kind": {
+    "followup": {
+      "runs": 30,
+      "exact": 0.567,
+      "covered": 1.0
+    },
+    "injection": {
+      "runs": 12,
+      "exact": 1.0,
+      "covered": 1.0
+    },
+    "multi": {
+      "runs": 24,
+      "exact": 0.75,
+      "covered": 0.875
+    },
+    "out_of_scope": {
+      "runs": 18,
+      "exact": 1.0,
+      "covered": null
+    },
+    "single": {
+      "runs": 84,
+      "exact": 0.976,
+      "covered": 1.0
+    },
+    "vague": {
+      "runs": 12,
+      "exact": 0.75,
+      "covered": 1.0
+    }
+  },
+  "confidence_buckets": [
+    {
+      "confidence": "0.0-0.6",
+      "runs": 24,
+      "exact": 0.5
+    },
+    {
+      "confidence": "0.6-0.8",
+      "runs": 36,
+      "exact": 0.75
+    },
+    {
+      "confidence": "0.8-0.9",
+      "runs": 30,
+      "exact": 0.9
+    },
+    {
+      "confidence": "0.9-1.0",
+      "runs": 90,
+      "exact": 1.0
+    }
+  ],
+  "threshold_sweep": [
+    {
+      "threshold": 0.0,
+      "covered": 0.925,
+      "fallback": 0.0,
+      "missed_returns": 3
+    },
+    {
+      "threshold": 0.5,
+      "covered": 0.925,
+      "fallback": 0.0,
+      "missed_returns": 3
+    },
+    {
+      "threshold": 0.6,
+      "covered": 0.95,
+      "fallback": 0.133,
+      "missed_returns": 3
+    },
+    {
+      "threshold": 0.7,
+      "covered": 0.981,
+      "fallback": 0.233,
+      "missed_returns": 0
+    },
+    {
+      "threshold": 0.8,
+      "covered": 0.981,
+      "fallback": 0.333,
+      "missed_returns": 0
+    },
+    {
+      "threshold": 0.9,
+      "covered": 1.0,
+      "fallback": 0.5,
+      "missed_returns": 0
+    }
+  ],
+  "confusion_single_intent": {
+    "returns": {
+      "order_status,returns": 7,
+      "returns": 50,
+      "other": 3
+    },
+    "order_status": {
+      "order_status": 39,
+      "order_status,returns": 3
+    },
+    "policy": {
+      "returns": 3,
+      "policy": 31,
+      "policy,returns": 2
+    },
+    "other": {
+      "other": 21
+    }
+  },
+  "misses": [
+    {
+      "id": "M5",
+      "run": 0,
+      "text": "Can you refund the wrong book you sent and tell me if you ship to the UK?",
+      "expected": [
+        "returns",
+        "policy"
+      ],
+      "intents": [
+        "returns"
+      ],
+      "confidence": 0.88,
+      "error": null
+    },
+    {
+      "id": "M5",
+      "run": 1,
+      "text": "Can you refund the wrong book you sent and tell me if you ship to the UK?",
+      "expected": [
+        "returns",
+        "policy"
+      ],
+      "intents": [
+        "returns"
+      ],
+      "confidence": 0.87,
+      "error": null
+    },
+    {
+      "id": "M5",
+      "run": 2,
+      "text": "Can you refund the wrong book you sent and tell me if you ship to the UK?",
+      "expected": [
+        "returns",
+        "policy"
+      ],
+      "intents": [
+        "returns"
+      ],
+      "confidence": 0.88,
+      "error": null
+    }
+  ],
+  "inexact_items": [
+    "F1",
+    "F3",
+    "F4",
+    "F7",
+    "F8",
+    "M2",
+    "M5",
+    "P8",
+    "V2"
+  ]
+}

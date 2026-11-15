@@ -1,0 +1,119 @@
+{
+  "config": {
+    "model": "jev-1.14.0",
+    "k": 2,
+    "label": "jev-v2",
+    "date": "2026-11-13T12:47:32",
+    "set": "evals/judgment_set.yaml (synthetic)",
+    "bands": {
+      "yes": 0.7,
+      "no": 0.3,
+      "close_yes": 0.85
+    }
+  },
+  "headline": {
+    "runs": 116,
+    "errors": 0,
+    "outcome_accuracy": 0.966,
+    "wrong_direction": 0,
+    "cost_total_usd": 0.005136,
+    "held_out_runs": 8,
+    "held_out_correct": 8
+  },
+  "by_kind": {
+    "remember": {
+      "runs": 48,
+      "items": 24,
+      "outcome_accuracy": 1.0,
+      "outcome_accuracy_clear_items": 1.0,
+      "wrong_direction": 0,
+      "unsettled_rate": 0.0,
+      "same_outcome_every_run": "24/24",
+      "latency_ms_p50": 103,
+      "input_tokens_per_call": 1879,
+      "cost_per_call_usd": 7.892e-05
+    },
+    "follow_up": {
+      "runs": 44,
+      "items": 22,
+      "outcome_accuracy": 1.0,
+      "outcome_accuracy_clear_items": 1.0,
+      "wrong_direction": 0,
+      "unsettled_rate": 0.136,
+      "same_outcome_every_run": "22/22",
+      "latency_ms_p50": 85,
+      "input_tokens_per_call": 469,
+      "cost_per_call_usd": 1.972e-05
+    },
+    "fit": {
+      "runs": 24,
+      "items": 12,
+      "outcome_accuracy": 0.833,
+      "outcome_accuracy_clear_items": 0.909,
+      "wrong_direction": 0,
+      "unsettled_rate": 0.167,
+      "same_outcome_every_run": "12/12",
+      "latency_ms_p50": 98,
+      "input_tokens_per_call": 476,
+      "cost_per_call_usd": 2e-05
+    }
+  },
+  "misses": [
+    {
+      "id": "P09",
+      "kind": "fit",
+      "run": 0,
+      "hard": true,
+      "input": "['The Midnight Library'] -> A Man Called Ove",
+      "expect": true,
+      "outcome": "unsettled",
+      "shown": {
+        "fit": 0.65
+      },
+      "wrong_direction": false,
+      "why": ""
+    },
+    {
+      "id": "P09",
+      "kind": "fit",
+      "run": 1,
+      "hard": true,
+      "input": "['The Midnight Library'] -> A Man Called Ove",
+      "expect": true,
+      "outcome": "unsettled",
+      "shown": {
+        "fit": 0.65
+      },
+      "wrong_direction": false,
+      "why": ""
+    },
+    {
+      "id": "P12",
+      "kind": "fit",
+      "run": 0,
+      "hard": false,
+      "input": "['Fourth Wing'] -> The Invisible Life of Addie LaRue",
+      "expect": true,
+      "outcome": "unsettled",
+      "shown": {
+        "fit": 0.53
+      },
+      "wrong_direction": false,
+      "why": ""
+    },
+    {
+      "id": "P12",
+      "kind": "fit",
+      "run": 1,
+      "hard": false,
+      "input": "['Fourth Wing'] -> The Invisible Life of Addie LaRue",
+      "expect": true,
+      "outcome": "unsettled",
+      "shown": {
+        "fit": 0.55
+      },
+      "wrong_direction": false,
+      "why": ""
+    }
+  ]
+}

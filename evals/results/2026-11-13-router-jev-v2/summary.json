@@ -1,0 +1,169 @@
+{
+  "config": {
+    "model": "jev-1.14.0",
+    "k": 3,
+    "threshold": 0.7,
+    "items": 60,
+    "date": "2026-11-13T12:47:10",
+    "label": "jev-v2",
+    "set": "evals/router_set.yaml (synthetic)"
+  },
+  "headline": {
+    "classifications": 180,
+    "needing_a_procedure": 159,
+    "exact_match": 0.872,
+    "covered": 1.0,
+    "covered_count": 159,
+    "missed_needed_procedure": 0,
+    "missed_returns": 0,
+    "fallback_rate": 0.183,
+    "over_loaded_rate": 0.017,
+    "consistent_items": "59/60",
+    "errors": 0
+  },
+  "operations": {
+    "latency_ms_p50": 92,
+    "latency_ms_p95": 172,
+    "cost_per_call_usd": 3.706e-05,
+    "cost_total_usd": 0.0067
+  },
+  "recall": {
+    "order_status": {
+      "runs": 54,
+      "recall": 1.0
+    },
+    "returns": {
+      "runs": 75,
+      "recall": 0.96
+    },
+    "policy": {
+      "runs": 45,
+      "recall": 1.0
+    },
+    "other": {
+      "runs": 27,
+      "recall": 1.0
+    }
+  },
+  "by_kind": {
+    "followup": {
+      "runs": 30,
+      "exact": 0.5,
+      "covered": 1.0
+    },
+    "injection": {
+      "runs": 12,
+      "exact": 1.0,
+      "covered": 1.0
+    },
+    "multi": {
+      "runs": 24,
+      "exact": 0.875,
+      "covered": 1.0
+    },
+    "out_of_scope": {
+      "runs": 18,
+      "exact": 1.0,
+      "covered": null
+    },
+    "single": {
+      "runs": 84,
+      "exact": 0.976,
+      "covered": 1.0
+    },
+    "vague": {
+      "runs": 12,
+      "exact": 0.75,
+      "covered": 1.0
+    }
+  },
+  "confidence_buckets": [
+    {
+      "confidence": "0.0-0.6",
+      "runs": 15,
+      "exact": 0.267
+    },
+    {
+      "confidence": "0.6-0.8",
+      "runs": 39,
+      "exact": 0.692
+    },
+    {
+      "confidence": "0.8-0.9",
+      "runs": 25,
+      "exact": 1.0
+    },
+    {
+      "confidence": "0.9-1.0",
+      "runs": 101,
+      "exact": 1.0
+    }
+  ],
+  "threshold_sweep": [
+    {
+      "threshold": 0.0,
+      "covered": 0.981,
+      "fallback": 0.0,
+      "missed_returns": 3
+    },
+    {
+      "threshold": 0.5,
+      "covered": 0.981,
+      "fallback": 0.0,
+      "missed_returns": 3
+    },
+    {
+      "threshold": 0.6,
+      "covered": 0.981,
+      "fallback": 0.083,
+      "missed_returns": 3
+    },
+    {
+      "threshold": 0.7,
+      "covered": 1.0,
+      "fallback": 0.183,
+      "missed_returns": 0
+    },
+    {
+      "threshold": 0.8,
+      "covered": 1.0,
+      "fallback": 0.3,
+      "missed_returns": 0
+    },
+    {
+      "threshold": 0.9,
+      "covered": 1.0,
+      "fallback": 0.439,
+      "missed_returns": 0
+    }
+  ],
+  "confusion_single_intent": {
+    "returns": {
+      "order_status,returns": 9,
+      "returns": 48,
+      "other": 3
+    },
+    "order_status": {
+      "order_status": 39,
+      "order_status,returns": 3
+    },
+    "policy": {
+      "policy,returns": 5,
+      "policy": 31
+    },
+    "other": {
+      "other": 21
+    }
+  },
+  "misses": [],
+  "inexact_items": [
+    "F1",
+    "F3",
+    "F4",
+    "F7",
+    "F8",
+    "M2",
+    "P8",
+    "V2"
+  ]
+}
