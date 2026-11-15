@@ -2,6 +2,7 @@
 
     uv run python -m evals.router_eval --k 3
     uv run python -m evals.router_eval --k 3 --threshold 0.7 --label haiku-t07
+    uv run python -m evals.router_eval --k 3 --engine jev          # the same set on Jev (docs/JEV.md)
 
 Writes evals/results/<date>-router-<label>/: report.md, summary.json, runs.jsonl.
 """
@@ -19,8 +20,10 @@ from pathlib import Path
 
 import yaml
 
-from bookly import config
+from bookly import config, judgments
 from bookly.agent import PRICES
+from bookly.jev import Jev
+from bookly.jev_router import JevRouter
 from bookly.router import INTENTS, PROCEDURE_INTENTS, Router
 
 HERE = Path(__file__).resolve().parent
@@ -63,7 +66,7 @@ def run_item(router: Router, item: dict, i: int) -> dict:
     return {
         "id": item["id"], "kind": item["kind"], "run": i, "text": item["text"], "expected": item["expected"],
         "intents": r.intents, "confidence": r.confidence, "error": r.error, "model": r.model,
-        "latency_ms": r.latency_ms, "cost_usd": round(cost_of(r.model, r.usage), 6),
+        "latency_ms": r.latency_ms, "cost_usd": round(cost_of(r.model, r.usage), 8), "probs": r.probs,
         "exact": not r.error and set(r.intents) == set(item["expected"]),
     }
 
@@ -121,7 +124,7 @@ def summarize(items: list[dict], runs: list[dict], args) -> dict:
     return {
         "config": {"model": args.model, "k": args.k, "threshold": args.threshold, "items": len(items),
                    "date": datetime.now().isoformat(timespec="seconds"), "label": args.label,
-                   "set": "evals/router_set.yaml (synthetic)"},
+                   "set": f"evals/{getattr(args, 'set_name', 'router_set.yaml')} (synthetic)"},
         "headline": {
             "classifications": n,
             "needing_a_procedure": len(needing),
@@ -138,7 +141,7 @@ def summarize(items: list[dict], runs: list[dict], args) -> dict:
         "operations": {
             "latency_ms_p50": lat[len(lat) // 2] if lat else None,
             "latency_ms_p95": lat[int(len(lat) * 0.95) - 1] if lat else None,
-            "cost_per_call_usd": round(statistics.mean(r["cost_usd"] for r in runs), 6),
+            "cost_per_call_usd": round(statistics.mean(r["cost_usd"] for r in runs), 8),
             "cost_total_usd": round(sum(r["cost_usd"] for r in runs), 4),
         },
         "recall": recall, "by_kind": by_kind, "confidence_buckets": buckets, "threshold_sweep": sweep,
@@ -186,6 +189,7 @@ def rescore(out: Path, args) -> None:
     runs = [json.loads(line) for line in (out / "runs.jsonl").read_text().splitlines() if line.strip()]
     old = json.loads((out / "summary.json").read_text())["config"]
     args.model, args.k, args.threshold, args.label = old["model"], old["k"], old["threshold"], old["label"]
+    args.set_name = old["set"].removeprefix("evals/").removesuffix(" (synthetic)")
     items = list({r["id"]: {"id": r["id"], "kind": r["kind"]} for r in runs}.values())
     summary = summarize(items, runs, args)
     summary["config"]["date"] = old["date"]
@@ -198,24 +202,34 @@ def rescore(out: Path, args) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--k", type=int, default=3)
-    ap.add_argument("--model", default=config.ROUTER_MODEL)
-    ap.add_argument("--threshold", type=float, default=config.ROUTER_THRESHOLD)
+    ap.add_argument("--engine", choices=("haiku", "jev"), default="haiku")
+    ap.add_argument("--model", default=None, help="default: the router model for the engine")
+    ap.add_argument("--threshold", type=float, default=None, help="default: 0.6 for haiku, 0.7 (the yes band) for jev")
     ap.add_argument("--workers", type=int, default=6)
-    ap.add_argument("--label", default="haiku")
+    ap.add_argument("--label", default=None, help="default: the engine name")
+    ap.add_argument("--set", default="router_set.yaml", dest="set_name",
+                    help="labelled set in evals/; router_holdout.yaml holds items never used to word a question")
     ap.add_argument("--rescore", help="re-grade a saved run folder from its runs.jsonl, with no API calls")
     args = ap.parse_args()
     if args.rescore:
         rescore(Path(args.rescore), args)
         return
+    jev_engine = args.engine == "jev"
+    args.model = args.model or (config.JEV_MODEL if jev_engine else config.ROUTER_MODEL)
+    args.threshold = args.threshold if args.threshold is not None else (judgments.YES if jev_engine else config.ROUTER_THRESHOLD)
+    args.label = args.label or args.engine
     if not re.fullmatch(r"[A-Za-z0-9_-]+", args.label):
         ap.error("--label must be a plain name (letters, digits, - and _); it becomes a folder name")
 
-    items = yaml.safe_load((HERE / "router_set.yaml").read_text())["items"]
+    items = yaml.safe_load((HERE / args.set_name).read_text())["items"]
     out = HERE / "results" / f"{datetime.now():%Y-%m-%d}-router-{args.label}"
     if out.exists():
         ap.error(f"{out} already exists; choose another --label so no saved run is overwritten")
 
-    router = Router(client=config.make_client(timeout=30, max_retries=2), model=args.model, threshold=args.threshold)
+    if jev_engine:
+        router = JevRouter(jev=Jev(model=args.model), threshold=args.threshold)
+    else:
+        router = Router(client=config.make_client(timeout=30, max_retries=2), model=args.model, threshold=args.threshold)
     jobs = [(it, i) for it in items for i in range(args.k)]
     print(f"Classifying {len(jobs)} messages ({len(items)} items × k={args.k}) on {args.model}")
     with ThreadPoolExecutor(max_workers=args.workers) as pool:

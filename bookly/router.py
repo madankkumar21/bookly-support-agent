@@ -68,6 +68,7 @@ class Route:
     usage: object | None = None  # the API usage object, so the agent can count the call's cost
     latency_ms: int = 0
     tools: list[str] = field(default_factory=list)  # shadow: what these intents would need
+    probs: dict | None = None  # Jev engine only: P(yes) per intent (bookly/jev_router.py)
 
     def to_load(self, threshold: float) -> tuple[set[str], bool]:
         """The intents whose procedures to load, and whether this is the fall-back to all of them."""

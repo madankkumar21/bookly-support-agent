@@ -26,20 +26,26 @@ from dataclasses import dataclass, field
 
 import anthropic
 
-from bookly import config
+from bookly import config, judgments
+from bookly import memory as customer_memory
+from bookly import missions as follow_ups
+from bookly import recommend as recommender
 from bookly.backend import Backend
 from bookly.gate import register_customer_reply
 from bookly.kb import PolicyText
 from bookly.policy import Policy
+from bookly.jev_router import make_router
 from bookly.router import PROCEDURE_INTENTS, REGISTRY, Router
 from bookly.state import Session
-from bookly.tools import TOOLS, Toolbox, result_json
+from bookly.store import Store, session_email
+from bookly.tools import Toolbox, result_json, tools_for
 
 # USD per million tokens: input, output, cache read, cache write (5-minute). Estimates for reporting.
 PRICES = {
     "claude-sonnet-5-5": (2.00, 10.00, 0.20, 2.50),
     "claude-opus-5-5": (4.00, 20.00, 0.20, 5.00),
     "claude-haiku-5-5": (0.10, 0.50, 0.01, 0.125),
+    "jev-1.14.0": (config.JEV_USD_PER_MTOK_INPUT, 0.0, 0.0, 0.0),  # input only; output is free
 }
 FALLBACK_MODELS = {"claude-sonnet-5-5", "claude-opus-5-5"}
 
@@ -61,13 +67,19 @@ ROUTED_PROCEDURES_NOTE = (
 )
 
 
-def build_system_prompt(include_procedures: bool = True) -> str:
+STORE_PROCEDURES = ("recommendations.md", "followups.md", "last_contact.md")  # in prompts/, so the glob below never loads them
+
+
+def build_system_prompt(include_procedures: bool = True, store: bool = False) -> str:
     base = (config.PROMPTS / "system.md").read_text().strip()
     if not include_procedures:  # the router adds them as they are needed
-        return base + "\n\n" + ROUTED_PROCEDURES_NOTE
-    parts = [base, "# Procedures"]
-    for path in sorted(config.PROCEDURES.glob("*.md")):
-        parts.append(path.read_text().strip())
+        parts = [base, ROUTED_PROCEDURES_NOTE]
+    else:
+        parts = [base, "# Procedures"]
+        for path in sorted(config.PROCEDURES.glob("*.md")):
+            parts.append(path.read_text().strip())
+    if store:  # only with BOOKLY_STORE=1: with it off, this prompt is byte-identical to the submitted one
+        parts += [(config.PROMPTS / name).read_text().strip() for name in STORE_PROCEDURES]
     return "\n\n".join(parts)
 
 
@@ -145,17 +157,26 @@ class Agent:
         model: str = config.AGENT_MODEL,
         effort: str = config.AGENT_EFFORT,
         router: Router | None = None,
+        store: Store | None = None,
     ):
-        self.backend = backend or Backend.load()
-        self.policy = policy or Policy.load()
-        self.kb = PolicyText(self.policy)
-        self.session = Session()
-        self.toolbox = Toolbox(self.session, self.backend, self.policy, self.kb)
+        if store is None and config.STORE_ENABLED:  # a private store: recommendations work, nothing is shared
+            store = Store.new(policy=policy, backend=backend)
+        self.store = store
+        self.backend = store.backend if store else (backend or Backend.load())
+        self.policy = store.policy if store else (policy or Policy.load())
+        self.kb = store.kb if store else PolicyText(self.policy)
+        # With a store, quote ids come from one counter shared by every conversation, so none repeats.
+        self.session = Session(_quote_seq=store.quote_seq) if store else Session()
+        self.toolbox = Toolbox(self.session, self.backend, self.policy, self.kb, store=store)
+        self.tools = tools_for(store is not None)
+        self._unjudged: list[str] = []  # customer messages not yet judged for memory (store on)
+        self._follow_up_read: dict[tuple[str, int], str] = {}  # (follow-up, turn) -> outcome, so a retry reads once
+        self._asked_follow_up = False  # the last reply offered the follow-up buttons (store on)
         self.client = client or config.make_client()
         self.model, self.effort = model, effort
-        self.router = router if router is not None else (Router() if config.ROUTER_ENABLED else None)
+        self.router = router if router is not None else (make_router() if config.ROUTER_ENABLED else None)
         self.loaded_intents: set[str] = set()  # procedures already sent in this conversation (router on)
-        self.system = build_system_prompt(include_procedures=self.router is None)
+        self.system = build_system_prompt(include_procedures=self.router is None, store=store is not None)
         self.messages: list[dict] = []
         self.usage = Usage()
         self.use_fallbacks = model in FALLBACK_MODELS
@@ -166,7 +187,7 @@ class Agent:
             model=self.model,
             max_tokens=config.AGENT_MAX_TOKENS,
             system=[{"type": "text", "text": self.system, "cache_control": {"type": "ephemeral"}}],
-            tools=TOOLS,
+            tools=self.tools,
             messages=self.messages,
             output_config={"effort": self.effort},
             cache_control={"type": "ephemeral"},
@@ -205,6 +226,8 @@ class Agent:
         elif button == "cancel" and not content:
             content = "[Customer pressed Cancel on the confirmation card]"
         s.log("customer", text=content, button=button, confirmation_signal=signal)
+        if self.store:
+            self._read_follow_up_replies(s, content, button, signal)
 
         history_mark = len(self.messages)
         intents_before = set(self.loaded_intents)
@@ -212,9 +235,9 @@ class Agent:
         self.messages.append({"role": "user", "content": content or "(empty message)"})
         if new_intents:
             self.messages.append({"role": "system", "content": [
-                {"type": "text", "text": s.facts_block()}, {"type": "text", "text": procedure_block(new_intents)}]})
+                {"type": "text", "text": self._facts(s)}, {"type": "text", "text": procedure_block(new_intents)}]})
         else:
-            self.messages.append({"role": "system", "content": s.facts_block()})
+            self.messages.append({"role": "system", "content": self._facts(s)})
 
         try:
             reply, resp_final, replaced = self._run_turn(s)
@@ -234,6 +257,12 @@ class Agent:
             s.log("claim_check", fired=True, original=reply)
             reply, replaced = self.kb.message("claim_correction"), True
 
+        if self.store:
+            unlisted = recommender.unlisted_titles(reply, self._allowed_titles(s), self.toolbox.recommend_called)
+            if unlisted:  # the model named a catalog book the system did not hand it
+                s.log("recommend_check", fired=True, titles=unlisted, original=reply)
+                reply, replaced = self._recommendation_fallback(), True
+
         if resp_final is not None:
             self._append_final(resp_final, reply if replaced else None)
 
@@ -245,10 +274,68 @@ class Agent:
                 s.log("card_shown", quote_id=q.quote_id, card=q.card())
             card = q.card()
 
+        if self.store:
+            self._remember(s, content, button, signal)
+
+        self._asked_follow_up = judgments.FOLLOW_UP_YES in options
         s.log("agent", text=reply, options=options)
         after = self.usage.as_dict()
         turn_usage = {k: (round(after[k] - usage_before[k], 5) if isinstance(after[k], (int, float)) else after[k]) for k in after}
         return TurnResult(reply=reply, options=options, card=card, handoff=s.handoff, events=s.trace[first_event:], usage=turn_usage)
+
+    # ---- store on only (BOOKLY_STORE=1): memory, recommendations, follow-ups ---------------------------
+    def _facts(self, s: Session) -> str:
+        """FACTS SO FAR, plus the customer-record lines when the store is on."""
+        base = s.facts_block()
+        extra = self.toolbox.store_facts() if self.store else []
+        return base + ("\n" + "\n".join(extra) if extra else "")
+
+    def _read_follow_up_replies(self, s: Session, content: str, button: str | None, signal: str | None) -> None:
+        """Before the model sees the message: if a follow-up is waiting for this customer's answer, Jev reads
+        the message and code applies the outcome. Skipped when a refund card is waiting, so a 'yes' to money is
+        never read as 'it arrived'."""
+        if button is not None or signal is not None or not content:
+            return
+        if (judgments.bare_answer(content) and not self._asked_follow_up
+                and judgments.decide_follow_up_button(content) is None):
+            return  # "yes" to some other question is not "yes, it arrived"
+        for m in self.store.missions.awaiting(s.verified_orders):
+            key = (m.mission_id, s.turn)
+            if key not in self._follow_up_read:
+                self._follow_up_read[key] = follow_ups.read_reply(self.store, s, self.toolbox, m, [content])
+            self.toolbox.follow_up_outcomes[m.mission_id] = self._follow_up_read[key]
+
+    def _remember(self, s: Session, content: str, button: str | None, signal: str | None) -> None:
+        """After the turn: Jev judges what the customer said, and code saves reading tastes as genre keys.
+        Nothing is judged until the conversation has one verified email; earlier messages wait until then."""
+        if button is None and signal is None and content and judgments.decide_follow_up_button(content) is None:
+            self._unjudged.append(content)
+        email = session_email(s, self.backend)
+        if email and self._unjudged:
+            pending, self._unjudged = self._unjudged, []
+            for text in pending:
+                customer_memory.remember(self.store, s, email, text)
+        if email:  # what code did in this conversation so far: the next conversation starts from it
+            self.store.contacts.record_facts(email, s, self.toolbox.refusals, self.store,
+                                             "close" in self.toolbox.follow_up_outcomes.values())
+
+    def _allowed_titles(self, s: Session) -> set[str]:
+        """Catalog titles the reply may name: this conversation's picks, the books on verified orders, and
+        any title the customer brought up themselves."""
+        owned = {b["title"] for b in recommender.owned_and_history(s, self.backend)[0]}
+        said = set()
+        for e in s.trace:
+            if e["kind"] == "customer":
+                said |= recommender.titles_in(e["text"])
+        names = {n.split()[0] for n in s.verified_orders.values()}  # "Thanks, James" is not the novel James
+        return self.toolbox.recommended_titles | owned | said | names
+
+    def _recommendation_fallback(self) -> str:
+        picks = self.toolbox.last_picks
+        if not picks:
+            return self.kb.message("recommendation_none")
+        return self.kb.message("recommendation_list",
+                               titles="; ".join(f"{p['book']['title']} by {p['book']['author']}" for p in picks))
 
     def _route(self, s: Session, text: str, button: str | None) -> list[str]:
         """Router on only: work out which procedures this turn needs. Returns the ones not sent before.

@@ -284,6 +284,9 @@ def main() -> None:
         ap.error("--label must be a plain name (letters, digits, - and _); it becomes a folder name")
     if config.ROUTER_ENABLED and not args.router:
         ap.error("BOOKLY_ROUTER=1 is set, so this run would not be router-off; pass --router or unset it")
+    if config.STORE_ENABLED:
+        ap.error("BOOKLY_STORE=1 is set, and this suite measures the agent with the store off; unset it, or run "
+                 "evals.run_journeys for the store")
     overrides = dict(o.split("=", 1) for o in args.override)
     scenarios = load_scenarios({x.strip() for x in args.only.split(",") if x.strip()} or None)
     client = config.make_client(timeout=120, max_retries=3)

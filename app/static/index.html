@@ -9,13 +9,13 @@
     color-scheme: light dark;
     --bg: #f6f3ee; --panel: #ffffff; --ink: #1f2328; --muted: #6b6f76; --line: #e3ddd3;
     --brand: #1f5f4a; --brand-ink: #ffffff; --me: #e7efe9; --model: #2f6fd6; --code: #3b4350; --code-bg: rgba(27,36,48,.06);
-    --ok: #1e7d4f; --bad: #b3261e; --warn: #9a6400; --card: #fff8e8; --card-line: #e8cf8f;
+    --ok: #1e7d4f; --bad: #b3261e; --warn: #9a6400; --card: #fff8e8; --card-line: #e8cf8f; --jev: #6b3fb8;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #15181c; --panel: #1d2126; --ink: #e8e6e3; --muted: #9aa0a6; --line: #2e333a;
       --brand: #3f9b7a; --brand-ink: #0d1411; --me: #22302a; --model: #7aa7ff; --code: #c9d0d8; --code-bg: rgba(232,230,227,.08);
-      --ok: #4cc38a; --bad: #ff8a80; --warn: #e0b04f; --card: #2a261c; --card-line: #6b5a2e;
+      --ok: #4cc38a; --bad: #ff8a80; --warn: #e0b04f; --card: #2a261c; --card-line: #6b5a2e; --jev: #b99cff;
     }
   }
   * { box-sizing: border-box; }
@@ -62,6 +62,12 @@
   .ev.code { color: var(--code); border-color: var(--code); background: var(--code-bg); border-radius: 0 4px 4px 0; padding-right: 6px; }
   .ev.ok { color: var(--ok); border-color: var(--ok); } .ev.bad { color: var(--bad); border-color: var(--bad); } .ev.warn { color: var(--warn); border-color: var(--warn); }
   .ev.dim { color: var(--muted); opacity: .75; border-color: transparent; font-size: 12px; }
+  .ev.jev { color: var(--jev); border-color: var(--jev); } .legend b.j { color: var(--jev); }
+  .storebar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .storebar[hidden], .systems[hidden] { display: none; }  /* store off: the display rules above must not un-hide these */
+  .storebar .btn { padding: 4px 10px; font-size: 13px; font-weight: 500; } .storebar .today { margin-right: 4px; color: var(--ink); }
+  .systems h3 { font-size: 12px; margin: 8px 0 2px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .note { align-self: center; color: var(--muted); font-size: 13px; text-align: center; padding: 4px 10px; border: 1px dashed var(--line); border-radius: 8px; }
   .systems { border-top: 1px solid var(--line); padding: 10px 14px; font-size: 13px; max-height: 32%; overflow-y: auto; }
   .systems h2 { font-size: 13px; margin: 0 0 6px; } .systems .empty { color: var(--muted); }
   .systems div.rec { padding: 3px 0; border-bottom: 1px dashed var(--line); }
@@ -86,10 +92,18 @@
   <section class="hood">
     <div class="panel-head">
       <h2>Behind the reply</h2>
-      <div class="legend"><b class="m">Blue</b> = the AI decided · <b class="c">Grey</b> = Bookly’s rules decided · <b class="ok">Green</b> = refund allowed · <b class="bad">Red</b> = refund blocked</div>
+      <div class="legend" id="legend"><b class="m">Blue</b> = the AI decided · <b class="c">Grey</b> = Bookly’s rules decided · <b class="ok">Green</b> = refund allowed · <b class="bad">Red</b> = refund blocked</div>
+      <div class="storebar" id="storebar" hidden>
+        <span class="today" id="today"></span>
+        <button class="btn ghost" type="button" id="newchat">New conversation, same store</button>
+        <button class="btn ghost" type="button" data-days="1">+1 day</button>
+        <button class="btn ghost" type="button" data-days="8">+8 days</button>
+        <button class="btn ghost" type="button" id="resetstore">Reset store</button>
+      </div>
     </div>
     <div class="trace" id="trace"><div class="ev dim">Every lookup, policy decision and confirmation shows here, turn by turn.</div></div>
     <div class="systems" id="systems"></div>
+    <div class="systems" id="store" hidden></div>
   </section>
 </main>
 <script>
@@ -101,9 +115,20 @@ function scroll(node) { node.scrollTop = node.scrollHeight; }
 
 const BOOK_MARK = '<svg viewBox="0 1.5 24 24" aria-hidden="true"><path d="M3 5h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5v13h-5a4 4 0 0 0-4 4 4 4 0 0 0-4-4H3z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 9v13" stroke="currentColor" stroke-width="2.2"/></svg>';
 
+// The model sometimes marks a book title as **bold**. Show it as bold text. Each piece goes in as a text node or
+// a <strong> holding text, never as innerHTML, so nothing in a reply can become markup.
+function setReply(node, text) {
+  node.textContent = "";
+  String(text).split(/(\*\*[^*\n]+\*\*)/).forEach((part) => {
+    const bold = /^\*\*([^*\n]+)\*\*$/.exec(part);
+    node.appendChild(bold ? el("strong", null, bold[1]) : document.createTextNode(part));
+  });
+}
+
 function addMsg(text, who) {
-  const m = el("div", "msg " + who, text);
-  if (who === "bot") {  // the assistant gets a small book avatar; the text itself still goes in as textContent
+  const m = el("div", "msg " + who, who === "bot" ? null : text);
+  if (who === "bot") {  // the assistant gets a small book avatar; its text goes in through setReply
+    setReply(m, text);
     const row = el("div", "bot-row"), avatar = el("div", "avatar");
     avatar.innerHTML = BOOK_MARK;
     row.appendChild(avatar); row.appendChild(m); $("log").appendChild(row);
@@ -139,7 +164,8 @@ function addCard(c) {
 function fmtArgs(input) { return Object.entries(input || {}).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", "); }
 
 function resultLine(tool, r) {
-  if (tool === "get_order") return r.status + (r.order ? ` · ${r.order.status}` : "");
+  if (tool === "get_order") return r.status + (r.order ? ` · ${r.order.status}` : "") + (r.customer_record ? ` · customer record ${r.customer_record.status}` : "");
+  if (tool === "recommend_books") return r.status + (r.picks ? ` · ${r.picks.map((p) => p.title).join(", ")}` : "");
   if (tool === "check_return_eligibility") {
     if (r.status === "blocked") return "blocked: " + r.reason;
     if (r.decision === "needs_input") return `needs_input (${r.field})`;
@@ -167,6 +193,39 @@ function routeLine(e) {
   return `router: ${e.intents.join(" + ")} (${e.confidence.toFixed(2)}) · ${added}`;
 }
 
+// One Jev call: what it was asked, the probabilities it gave, and what code decided with them.
+function jevLine(e) {
+  if (e.jev_error) return `Jev · ${e.purpose} · unavailable (${e.jev_error}) → code: ${e.decision}`;
+  const answers = Object.entries(e.answers || {}).map(([k, v]) => `${k} ${Number(v).toFixed(2)}`).join(", ");
+  const about = e.mission_id ? ` ${e.mission_id}` : "";
+  const state = e.to_status ? ` → ${e.to_status}` : "";
+  return `Jev · ${e.purpose}${about} · ${answers || "not asked"} → code: ${e.decision}${state}${e.latency_ms ? ` · ${e.latency_ms} ms` : ""}`;
+}
+
+// The store panel (store on only): what outlives a conversation.
+function renderStore(s) {
+  if (!s) return;
+  storeOn = true;
+  const box = $("store"); box.hidden = false; box.innerHTML = "";
+  $("storebar").hidden = false; $("today").textContent = `Today: ${s.today}`;
+  box.appendChild(el("h2", null, "The store: what outlives a conversation"));
+  box.appendChild(el("h3", null, "Customer memory (genre keys, never the customer’s words)"));
+  const memory = Object.entries(s.memory);
+  if (!memory.length) box.appendChild(el("div", "empty", "Nothing saved yet."));
+  memory.forEach(([email, m]) => box.appendChild(el("div", "rec", `${email} · likes ${m.likes.join(", ") || "none"} · dislikes ${m.dislikes.join(", ") || "none"}`)));
+  box.appendChild(el("h3", null, "Follow-ups"));
+  if (!s.follow_ups.length) box.appendChild(el("div", "empty", "None open."));
+  s.follow_ups.forEach((m) => box.appendChild(el("div", "rec", `${m.mission_id} · ${m.subject} · ${m.status}${m.status === "scheduled" ? ` · due ${m.due_on}` : ""}${m.ticket_id ? ` · ${m.ticket_id}` : ""}`)));
+  box.appendChild(el("h3", null, "Last contact (what code did, and the mood Jev read; never the customer’s words)"));
+  const contacts = Object.entries(s.contacts || {});
+  if (!contacts.length) box.appendChild(el("div", "empty", "No verified customer has been in touch yet."));
+  contacts.forEach(([email, c]) => box.appendChild(el("div", "rec", `${email} · ${c.on} · ended: ${c.ended}${c.ticket_id ? ` (${c.ticket_id})` : ""} · mood ${c.mood} · gave up: ${c.gave_up} · said solved: ${c.said_solved}`)));
+  box.appendChild(el("h3", null, "Outbox (simulated email)"));
+  if (!s.outbox.length) box.appendChild(el("div", "empty", "Nothing sent yet."));
+  s.outbox.forEach((o) => box.appendChild(el("div", "rec", `${o.sent_on} → ${o.to}: ${o.text}`)));
+}
+
+let storeOn = false;
 let lastTurn = 0;
 function renderTrace(events, latency) {
   const t = $("trace");
@@ -183,6 +242,11 @@ function renderTrace(events, latency) {
     else if (e.kind === "gate") { cls = e.allowed ? "ok" : "bad"; txt = `final check · refund ${e.allowed ? "ALLOWED" : "BLOCKED"} · ${plainReason(e.reason)}`; }
     else if (e.kind === "card_shown") { cls = "warn"; txt = `confirmation card shown · ${e.quote_id} (built by code from the terms)`; }
     else if (e.kind === "claim_check") { cls = "bad"; txt = "claim check replaced a reply that claimed an unbacked refund"; }
+    else if (e.kind === "jev") { cls = e.jev_error ? "bad" : "jev"; txt = jevLine(e); }
+    else if (e.kind === "return_contact") { cls = "code"; txt = `last contact, read by code: ended ${e.ended} · mood ${e.mood} · gave up ${e.gave_up} → ${e.decision}`; }
+    else if (e.kind === "follow_up") { cls = "code"; txt = `follow-up ${e.mission_id} → ${e.to_status} · ${e.decision}`; }
+    else if (e.kind === "follow_up_button") { cls = "code"; txt = `follow-up ${e.mission_id}: button read by code → ${e.decision} → ${e.to_status}`; }
+    else if (e.kind === "recommend_check") { cls = "bad"; txt = `reply named a book the system did not hand over (${(e.titles || []).join(", ")}); code replaced it`; }
     else if (e.kind === "api_call") { cls = "dim"; txt = `${e.model} · ${e.stop_reason} · ${e.latency_ms} ms`; }
     else if (e.kind === "api_error" || e.kind === "tool_error") { cls = "bad"; txt = e.kind; }
     else return;
@@ -197,7 +261,18 @@ function renderSystems(s) {
   box.appendChild(el("h2", null, "Bookly’s systems (simulated)"));
   if (!s.returns.length && !s.tickets.length && !s.password_resets.length) { box.appendChild(el("div", "empty", "No returns, tickets or resets yet.")); return; }
   s.returns.forEach((r) => box.appendChild(el("div", "rec", `Return ${r.rma_id} · refund ${r.refund_id} · $${r.amount.toFixed(2)} · ${r.reason} · ${r.resolution}`)));
-  s.tickets.forEach((tk) => box.appendChild(el("div", "rec", `Ticket ${tk.ticket_id} · ${tk.reason_code} · ${tk.payload.identity}`)));
+  s.tickets.forEach((tk) => {
+    const row = el("div", "rec", `Ticket ${tk.ticket_id} · ${tk.reason_code}${tk.payload.priority ? " · PRIORITY" : ""} · ${tk.payload.identity || "opened by the system"}${storeOn ? ` · opened ${tk.opened_on || "?"} · ${tk.answered_on ? `a person replied ${tk.answered_on}` : tk.escalated_to ? `taken over by ${tk.escalated_to}` : "no reply yet"}` : ""}`);
+    if (storeOn && !tk.answered_on && !tk.escalated_to) {  // simulated staff: the proof that a person answered
+      const b = el("button", "btn ghost", "Staff replied"); b.type = "button"; b.style.marginLeft = "8px";
+      b.onclick = async () => {
+        const res = await fetch("/api/ticket/answer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket_id: tk.ticket_id }) });
+        if (res.ok) { const d = await res.json(); renderSystems(d.systems); renderStore(d.store); }
+      };
+      row.appendChild(b);
+    }
+    box.appendChild(row);
+  });
   s.password_resets.forEach((e) => box.appendChild(el("div", "rec", `Password reset requested · ${e}`)));
 }
 
@@ -217,6 +292,7 @@ async function send(text, button, quoteId) {
     if (d.card) addCard(d.card);
     renderTrace(d.events, d.latency_ms);
     renderSystems(d.systems);
+    renderStore(d.store);
   } catch (err) {
     typing.remove(); addMsg(err.message, "bot");
   } finally { busy = false; $("send").disabled = false; $("input").focus(); }
@@ -225,13 +301,14 @@ async function send(text, button, quoteId) {
 $("form").onsubmit = (e) => { e.preventDefault(); const v = $("input").value; $("input").value = ""; send(v); };
 $("input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("form").requestSubmit(); } });
 
-(async () => {
+async function startConversation() {
   const r = await fetch("/api/session", { method: "POST" });
   const d = await r.json();
   if (!r.ok) { addMsg(d.detail || "Could not start a session.", "bot"); return; }
   sessionId = d.session_id;
+  storeOn = !!d.store;
   addMsg("Hi! I'm Bookly's assistant. I can check on an order, help with a return or refund, or answer questions about shipping and our policies.", "bot");
-  addChips(["My order is messed up", "Where is my order?", "Do you ship to Canada?", "I forgot my password"], (o) => send(o));
+  addChips(["My order is messed up", "Where is my order?", "Do you ship to Canada?", "I forgot my password"].concat(storeOn ? ["Recommend me a book"] : []), (o) => send(o));
   const help = el("details", "help");
   help.innerHTML = `<summary>Test accounts</summary>
     <code>BK-1001 maya.chen@example.com</code> damaged book, delivered 4 days ago<br>
@@ -244,8 +321,38 @@ $("input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shif
     <code>BK-1010 tom.becker@example.com</code> delivered 20 days ago<br>
     <code>BK-1013 nina.patel@example.com</code> late, probably lost`;
   $("log").appendChild(help);
-  renderSystems({ returns: [], tickets: [], password_resets: [] });
-})();
+  renderSystems(d.systems || { returns: [], tickets: [], password_resets: [] });
+  if (storeOn) {
+    renderStore(d.store);
+    if (!$("legend").querySelector(".j")) { const j = el("b", "j", "Purple"); $("legend").append(" · ", j, " = Jev judged, code decided"); }
+  }
+}
+
+// Store on only. A new conversation keeps the store; a tick moves the shared clock and runs the follow-up check.
+function resetPage(note) {
+  $("log").innerHTML = ""; $("trace").innerHTML = ""; lastTurn = 0;
+  if (note) $("trace").appendChild(el("div", "ev dim", note));
+}
+$("newchat").onclick = async () => { if (busy) return; resetPage("New conversation. The store on the right is unchanged."); await startConversation(); };
+$("resetstore").onclick = async () => {
+  if (busy) return;
+  await fetch("/api/store/reset", { method: "POST" });
+  resetPage("Store reset."); await startConversation();
+};
+document.querySelectorAll("#storebar [data-days]").forEach((b) => {
+  b.onclick = async () => {
+    if (busy) return;
+    const res = await fetch("/api/tick", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ days: Number(b.dataset.days) }) });
+    if (!res.ok) return;
+    const d = await res.json();
+    renderSystems(d.systems); renderStore(d.store);
+    const sent = d.events.filter((e) => e.event === "asked").length;
+    $("log").appendChild(el("div", "note", `${b.dataset.days} day(s) later. Today is ${d.store.today}.${sent ? ` Bookly sent ${sent} follow-up email(s): see the outbox.` : ""}`));
+    scroll($("log"));
+  };
+});
+
+startConversation();
 </script>
 </body>
 </html>

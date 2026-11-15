@@ -102,3 +102,19 @@ messages:
     A book can be returned once it has been delivered.
   ineligible_already_returned: >-
     This book already has a return.
+  # Store on only (BOOKLY_STORE, docs/JEV.md). The code sends these; the model never writes its own.
+  recommendation_list: >-
+    Here is what I can recommend from our catalog: {titles}.
+  recommendation_none: >-
+    I don't have a good match in our catalog right now. I can connect you with a member of our team who can help.
+  handoff_overdue: >-
+    I'm sorry. Nobody replied to your earlier request (ticket {old_ticket_id}) in the time we promised. I've
+    marked it as a priority (ticket {ticket_id}), and a member of our team will reply by email within
+    {support.human_reply_business_days} business day. They will have the full details, so you will not need to
+    repeat yourself.
+  follow_up_refund_check: >-
+    Hello {first_name}, this is Bookly. We refunded {amount} for order {order_id}. Has the refund reached you?
+    You can answer in the chat on our site.
+  follow_up_lost_package_check: >-
+    Hello {first_name}, this is Bookly. We are following up on the package for order {order_id} that did not
+    arrive. Has it reached you since? You can answer in the chat on our site.

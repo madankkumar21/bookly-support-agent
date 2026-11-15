@@ -19,6 +19,17 @@ def router_off(monkeypatch):
     monkeypatch.setattr(bookly.config, "ROUTER_ENABLED", False)
 
 
+@pytest.fixture(autouse=True)
+def jev_off(monkeypatch, tmp_path):
+    """Flags in .env must not reach the scripted tests, and no test may spend on or log to the real Jev."""
+    import bookly.config
+
+    monkeypatch.setattr(bookly.config, "STORE_ENABLED", False)
+    monkeypatch.setattr(bookly.config, "ROUTER_ENGINE", "haiku")
+    monkeypatch.setattr(bookly.config, "JEV_LOG", tmp_path / "jev_calls.jsonl")
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+
+
 @pytest.fixture
 def backend() -> Backend:
     return Backend.load()

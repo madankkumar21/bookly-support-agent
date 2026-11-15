@@ -8,9 +8,11 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 from bookly.config import ORDERS_PATH, TODAY
 
@@ -62,6 +64,14 @@ class Ticket:
     ticket_id: str
     reason_code: str
     payload: dict
+    opened_on: str | None = None  # ISO dates, so the snapshot stays plain JSON
+    answered_on: str | None = None  # set when a person replies (the demo's "Staff replied" button)
+    escalated_to: str | None = None  # a later priority ticket that took this one over (bookly/contact.py)
+
+
+class ItemAlreadyReturned(Exception):
+    """A second return for a book that already has one. The gate refuses this first; this is the last line of
+    defence when two conversations share one backend (bookly/store.py) and act at the same moment."""
 
 
 def _d(value: str | None) -> date | None:
@@ -83,6 +93,7 @@ class Backend:
     password_resets: list[str] = field(default_factory=list)
     tickets: list[Ticket] = field(default_factory=list)
     today: date = TODAY
+    _lock: Any = field(default_factory=threading.Lock, repr=False, compare=False)
 
     @classmethod
     def load(cls, path: Path = ORDERS_PATH, today: date = TODAY) -> Backend:
@@ -143,25 +154,29 @@ class Backend:
     def record_return(
         self, *, quote_id: str, order_id: str, item_ids: list[str], reason: str, resolution: str, amount: float
     ) -> ReturnRecord:
-        existing = self.find_return_by_quote(quote_id)
-        if existing:  # the ledger is unique on quote_id: a retry can never refund twice
-            return existing
-        n = len(self.ledger) + 1
-        digits = order_id.split("-")[-1]
-        rec = ReturnRecord(
-            rma_id=f"RMA-{digits}-{n:02d}",
-            refund_id=f"RF-{digits}-{n:02d}",
-            quote_id=quote_id,
-            order_id=order_id,
-            item_ids=list(item_ids),
-            reason=reason,
-            resolution=resolution,
-            amount=round(amount, 2),
-            label_url=(f"https://bookly.example/labels/RMA-{digits}-{n:02d}.pdf" if resolution == "return_for_refund" else None),
-            created_on=self.today.isoformat(),
-        )
-        self.ledger.append(rec)
-        return rec
+        with self._lock:  # check and write as one step
+            existing = self.find_return_by_quote(quote_id)
+            if existing:  # the ledger is unique on quote_id: a retry can never refund twice
+                return existing
+            already = self.returned_item_ids(order_id)
+            if any(item_id in already for item_id in item_ids):  # one book, one return, whichever chat asks
+                raise ItemAlreadyReturned(order_id)
+            n = len(self.ledger) + 1
+            digits = order_id.split("-")[-1]
+            rec = ReturnRecord(
+                rma_id=f"RMA-{digits}-{n:02d}",
+                refund_id=f"RF-{digits}-{n:02d}",
+                quote_id=quote_id,
+                order_id=order_id,
+                item_ids=list(item_ids),
+                reason=reason,
+                resolution=resolution,
+                amount=round(amount, 2),
+                label_url=(f"https://bookly.example/labels/RMA-{digits}-{n:02d}.pdf" if resolution == "return_for_refund" else None),
+                created_on=self.today.isoformat(),
+            )
+            self.ledger.append(rec)
+            return rec
 
     # ---- account and helpdesk -----------------------------------------------------------
     def send_password_reset(self, email: str) -> None:
@@ -170,7 +185,8 @@ class Backend:
         self.password_resets.append(email.strip().lower())
 
     def create_ticket(self, reason_code: str, payload: dict) -> Ticket:
-        ticket = Ticket(ticket_id=f"T-{len(self.tickets) + 1:04d}", reason_code=reason_code, payload=payload)
+        ticket = Ticket(ticket_id=f"T-{len(self.tickets) + 1:04d}", reason_code=reason_code, payload=payload,
+                        opened_on=self.today.isoformat())
         self.tickets.append(ticket)
         return ticket
 

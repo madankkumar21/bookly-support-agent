@@ -70,6 +70,13 @@ def print_trace(events: list[dict]) -> None:
                 print(f"{CYAN}  ⇢ router unsure ({e['route_error'] or round(e['confidence'] or 0, 2)}) → all procedures · loaded {added}{RESET}")
             else:
                 print(f"{CYAN}  ⇢ router: {' + '.join(e['intents'])} ({e['confidence']:.2f}) · loaded {added}{RESET}")
+        elif k == "jev":  # store on only (BOOKLY_STORE=1): what Jev judged, and what code decided with it
+            answers = ", ".join(f"{q} {p:.2f}" for q, p in (e.get("answers") or {}).items()) or e.get("jev_error") or "not asked"
+            print(f"{CYAN}  ◆ Jev {e['purpose']}: {short(answers, 90)} → code: {e['decision']}{RESET}")
+        elif k in ("follow_up", "follow_up_button"):
+            print(f"{DIM}  ↻ follow-up {e['mission_id']} → {e['to_status']} · {e['decision']}{RESET}")
+        elif k == "recommend_check":
+            print(f"{RED}  ! reply named a book the system did not hand over ({', '.join(e['titles'])}); code replaced it{RESET}")
 
 
 def print_turn(t: TurnResult, trace: bool) -> None:

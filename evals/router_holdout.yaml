@@ -1,0 +1,23 @@
+# Held-out items for the intent router (evals/router_eval.py --set router_holdout.yaml).
+#
+# Written on 2026-11-13, after the first Jev run and BEFORE the reworded policy questions were ever run.
+# No question wording was written against these items, and none is taken from router_set.yaml. They exist
+# to check that a wording change made after seeing a miss also holds on messages it was not written for.
+# Same format and label rules as router_set.yaml. Synthetic, and labelled by the person who wrote the questions.
+
+items:
+  # ---- two requests in one message, one of them a general rule or an account problem ---------------------
+  - {id: H1, kind: multi, text: "My paperback came with water damage and I'd like my money back. Also, how long do refunds usually take?", expected: [returns, policy]}
+  - {id: H2, kind: multi, text: "Where's my order BK-1009? And do you deliver to Mexico?", expected: [order_status, policy]}
+  - {id: H3, kind: multi, text: "I need to send back a duplicate copy. Separately, is there a fee for standard shipping?", expected: [returns, policy]}
+  - {id: H4, kind: multi, text: "Can you tell me your return window, and also suggest a good cookbook?", expected: [policy, other]}
+  - {id: H5, kind: multi, text: "My parcel is a week late, and I also can't log in to my account.", expected: [order_status, policy]}
+  # ---- one request: a rule or an account --------------------------------------------------------------
+  - {id: H6, kind: single, text: "Is expedited shipping available?", expected: [policy]}
+  - {id: H7, kind: single, text: "How many days do I have to return a paperback?", expected: [policy]}
+  - {id: H8, kind: single, text: "I can't sign in, it says my password is wrong.", expected: [policy]}
+  # ---- one request that is NOT policy: the reworded questions must not start firing on these -------------
+  - {id: H9, kind: single, text: "The novel I ordered arrived as the wrong edition, please refund me.", expected: [returns]}
+  - {id: H10, kind: single, text: "Has BK-1012 left the warehouse?", expected: [order_status]}
+  - {id: H11, kind: out_of_scope, text: "Do you have anything by Kazuo Ishiguro in stock?", expected: [other]}
+  - {id: H12, kind: single, text: "I sent a book back last week, where's my refund?", expected: [returns]}

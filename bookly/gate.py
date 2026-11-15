@@ -84,13 +84,15 @@ class GateResult:
 
 
 def check_create_return(session: Session, backend: Backend, policy: Policy, quote_id: str) -> GateResult:
-    existing = backend.find_return_by_quote(quote_id)
-    if existing:
-        return GateResult(False, "already_exists", "This quote was already used. Same return, same refund.", existing)
-
+    # The quote must be one this conversation issued. Checked first, so that with a shared backend
+    # (bookly/store.py) a conversation cannot read another one's return by guessing its quote id.
     quote = session.quotes.get(quote_id)
     if quote is None:
         return GateResult(False, "blocked", "unknown_quote")
+
+    existing = backend.find_return_by_quote(quote_id)
+    if existing:
+        return GateResult(False, "already_exists", "This quote was already used. Same return, same refund.", existing)
     if quote.quote_id != session.latest_quote_id or quote.status == "void":
         reason = "customer_declined" if quote.confirmation == "declined" else "stale_quote"
         return GateResult(False, "blocked", reason)

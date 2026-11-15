@@ -10,12 +10,16 @@ import json
 from datetime import date, timedelta
 from typing import Any
 
-from bookly import config
-from bookly.backend import Backend, normalize_order_id
+from bookly import config, judgments
+from bookly import contact as last_contact
+from bookly import missions as follow_ups
+from bookly import recommend as recommender
+from bookly.backend import Backend, ItemAlreadyReturned, normalize_order_id
 from bookly.gate import check_create_return
 from bookly.kb import PolicyText
 from bookly.policy import Policy, evaluate
 from bookly.state import Action, Session
+from bookly.store import session_email
 
 
 def _obj(properties: dict, description: str, name: str) -> dict:
@@ -111,6 +115,28 @@ TOOLS: list[dict] = sorted(
     key=lambda t: t["name"],
 )
 
+# Only offered when the store is on (BOOKLY_STORE=1, docs/JEV.md). With it off, the tool list is TOOLS itself.
+RECOMMEND_TOOL = _obj(
+    {
+        "genres": {
+            "type": "array",
+            "items": {"type": "string", "enum": list(judgments.GENRES)},
+            "description": "The kinds of books the customer asked for in this conversation, mapped to the closest "
+            "genres on this list. Use an empty list if they named none. Do not guess a genre they did not mention.",
+        },
+    },
+    "Recommend books from Bookly's catalog. The system uses the genres you pass, the reading tastes on file for a "
+    "verified customer, and the books on their verified orders. Returns 'ok' with up to three picks (title, author, "
+    "format, price, genres, about, why), 'needs_input' when there is nothing to go on yet, or 'no_fit' / 'failed' "
+    "when there is no good match. Recommend only the books in picks.",
+    "recommend_books",
+)
+
+
+def tools_for(store_on: bool) -> list[dict]:
+    """The tool list for one agent. Without the store it is TOOLS itself, so the cached prefix is unchanged."""
+    return TOOLS if not store_on else sorted([*TOOLS, RECOMMEND_TOOL], key=lambda t: t["name"])
+
 
 def _human(d: date | None) -> str | None:
     """Dates the way a person says them: 'Tuesday, October 13'."""
@@ -124,6 +150,15 @@ def _business_days_between(start: date, end: date) -> int:
         if d.weekday() < 5:
             days += 1
     return days
+
+
+def _likely_lost(order, today: date, policy: Policy) -> bool:
+    """Lost = no tracking scan for N business days after the estimate (the same rule the policy text states)."""
+    last_known = max(d for d in (order.eta, order.last_scan_at) if d) if order.eta else None
+    return bool(
+        order.status == "shipped" and order.eta and today > order.eta
+        and _business_days_between(last_known, today) >= int(policy.get("shipping.lost_after_business_days_past_eta"))
+    )
 
 
 NEXT_STEP_FOR_BLOCK = {
@@ -140,8 +175,17 @@ NEXT_STEP_FOR_BLOCK = {
 
 
 class Toolbox:
-    def __init__(self, session: Session, backend: Backend, policy: Policy, policy_text: PolicyText):
+    def __init__(self, session: Session, backend: Backend, policy: Policy, policy_text: PolicyText, store=None):
         self.s, self.b, self.p, self.kb = session, backend, policy, policy_text
+        self.store = store  # bookly/store.py; None unless BOOKLY_STORE=1
+        self.recommended_titles: set[str] = set()  # what recommend_books returned in this conversation
+        self.last_picks: list[dict] = []
+        self.recommend_called = False  # until then, a one-word title in a reply must be marked as a book
+        self.follow_up_outcomes: dict[str, str | None] = {}  # follow-ups touched in this conversation
+        self.refusals = 0  # refund checks that were not eligible; kept in the contact record (store on)
+        self.return_contact: dict | None = None  # how the last conversation ended (bookly/contact.py)
+        self.return_contact_turn: int | None = None
+        self.escalate_early = False  # set by code when the last contact ended angry and unresolved
 
     def run(self, name: str, args: dict[str, Any]) -> tuple[dict, bool]:
         """Execute one tool call. Returns (result, is_error). Never raises into the model loop."""
@@ -169,13 +213,8 @@ class Toolbox:
         self.s.verified_orders[order.order_id] = order.customer_name
         returned = self.b.returned_item_ids(order.order_id)
         today = self.b.today
-        # Lost = no tracking scan for N business days after the estimate (the same rule the policy text states).
-        last_known = max(d for d in (order.eta, order.last_scan_at) if d) if order.eta else None
-        likely_lost = bool(
-            order.status == "shipped" and order.eta and today > order.eta
-            and _business_days_between(last_known, today) >= int(self.p.get("shipping.lost_after_business_days_past_eta"))
-        )
-        return {
+        likely_lost = _likely_lost(order, today, self.p)
+        result = {
             "status": "found",
             "today": today.isoformat(),
             "order": {
@@ -200,6 +239,74 @@ class Toolbox:
                 ],
             },
         }
+        if self.store:
+            result["customer_record"] = self._customer_record(order)
+        return result
+
+    def _customer_record(self, order) -> dict:
+        """Store on. What Bookly already holds for this customer, readable now that the order is verified.
+
+        Verification happens in the middle of a turn, so this is where the record first reaches the model.
+        An open follow-up is read here against what the customer has already said in this conversation, so
+        the agent does not ask a question the customer answered in their first message.
+        """
+        email = session_email(self.s, self.b)
+        if email is None:
+            return {"status": "closed", "why": "The verified orders in this conversation belong to different emails."}
+        record: dict = {"status": "open", "reading_tastes": self.store.memory.tastes(email)}
+        if self.return_contact_turn is None:  # once per conversation, at the first verified order
+            self.return_contact_turn = self.s.turn
+            self.return_contact = last_contact.on_return(self.store, self.s, self, email)
+        if self.return_contact and self.return_contact["first"]:
+            record["last_contact"] = self.return_contact["first"]
+        notes = []
+        for m in self.store.missions.awaiting([order.order_id]):
+            said = [e["text"] for e in self.s.trace
+                    if e["kind"] == "customer" and e["text"] and not e.get("button") and e.get("confirmation_signal") is None
+                    and not judgments.bare_answer(e["text"])]  # a bare "yes" earlier answered some other question
+            if self.follow_up_outcomes.get(m.mission_id) is not None:
+                outcome = self.follow_up_outcomes[m.mission_id]  # already read in this conversation: one read, one ask
+            else:
+                outcome = follow_ups.read_reply(self.store, self.s, self, m, said) if said else None
+                self.follow_up_outcomes[m.mission_id] = outcome
+            notes.append(m.next_step(outcome))
+        if notes:
+            record["follow_ups"] = notes
+        return record
+
+    def store_facts(self) -> list[str]:
+        """Store on. Extra FACTS SO FAR lines. Every word is rendered from code-owned values: genre names from
+        a fixed list and follow-up text built by code. Nothing the customer typed is replayed here."""
+        if not self.s.verified_orders:
+            return []
+        email = session_email(self.s, self.b)
+        if email is None:
+            return ["- Customer record: closed, because the verified orders belong to different emails."]
+        lines = []
+        tastes = self.store.memory.tastes(email)
+        if tastes:
+            parts = [f"{kind} {', '.join(names)}" for kind, names in tastes.items() if names]
+            lines.append("- Reading tastes on file for this verified customer (saved by the Bookly system from "
+                         "earlier conversations): " + "; ".join(parts) + ".")
+        rc = self.return_contact
+        if rc:  # the full instruction is in the get_order result on the turn it was found; later turns get less
+            line = rc["first"] if self.s.turn == self.return_contact_turn else rc["later"]
+            if line:
+                lines.append("- " + line)
+        for m in self.store.missions.items:
+            if m.order_id in self.s.verified_orders and (m.status == "awaiting_reply" or m.mission_id in self.follow_up_outcomes):
+                lines.append("- " + m.next_step(self.follow_up_outcomes.get(m.mission_id)))
+        return lines
+
+    def _t_recommend_books(self, genres: list[str]) -> dict:
+        if not self.store:
+            return {"status": "failed", "reason": "recommendations_off", "next_step": "Offer a person."}
+        self.recommend_called = True
+        result, picks = recommender.recommend(self.store, self.s, self.b, session_email(self.s, self.b), genres)
+        if picks:
+            self.last_picks = picks
+            self.recommended_titles |= {p["book"]["title"] for p in picks}
+        return result
 
     def _t_check_return_eligibility(self, order_id: str, item_ids: list[str], reason: str) -> dict:
         canonical = normalize_order_id(order_id)
@@ -240,7 +347,8 @@ class Toolbox:
                     "approval_limit": self.p.approval_cap, "books": [line.title for line in d.lines],
                     "next_step": "Explain that refunds above the approval limit are reviewed by a person, then call "
                                  "handoff_to_human with reason_code needs_human_approval."}
-        return {
+        self.refusals += 1
+        out = {
             "status": "ok",
             "decision": "ineligible",
             "reason_code": d.reason_code,
@@ -248,6 +356,18 @@ class Toolbox:
             "policy_ref": d.policy_ref,
             "next_step": "Explain this plainly and kindly. Do not offer exceptions. Offer a person who can review it.",
         }
+        if self.escalate_early and not self.s.handoff and session_email(self.s, self.b):
+            # The last conversation ended angry and unresolved, and this one has hit a refusal too. Code brings
+            # a person in now. The decision above does not change: the refund is still not eligible.
+            h = self.handoff("repeat_contact_unresolved",
+                             "The customer's last conversation ended without a resolution, and they have come back. "
+                             f"A refund check in this conversation was not eligible ({d.reason_code}). Passed to a "
+                             "person by the system, as a priority.", extra={"priority": True})
+            out["handoff"] = h
+            out["next_step"] = ("Explain the decision plainly in one sentence. Do not offer exceptions. The system has "
+                                "already passed this to a person. Then give the customer message_for_customer from "
+                                "`handoff`, word for word.")
+        return out
 
     def _explain(self, d) -> list[str]:
         """One sentence of pinned policy text per rejected book, from policy_text.yaml (so the no-digits test covers it)."""
@@ -279,12 +399,19 @@ class Toolbox:
             return {"status": "blocked", "reason": gate.reason, "next_step": NEXT_STEP_FOR_BLOCK.get(gate.reason, "Explain and offer a person.")}
 
         q = self.s.quotes[quote_id]
-        rec = self.b.record_return(
-            quote_id=q.quote_id, order_id=q.order_id, item_ids=[line.item_id for line in q.decision.lines],
-            reason=q.reason, resolution=q.decision.decision, amount=q.decision.amount,
-        )
+        try:
+            rec = self.b.record_return(
+                quote_id=q.quote_id, order_id=q.order_id, item_ids=[line.item_id for line in q.decision.lines],
+                reason=q.reason, resolution=q.decision.decision, amount=q.decision.amount,
+            )
+        except ItemAlreadyReturned:  # another conversation returned it between the gate and the write
+            return {"status": "blocked", "reason": "already_returned", "next_step": NEXT_STEP_FOR_BLOCK["already_returned"]}
         q.status = "used"
         self.s.actions.append(Action("return_created", rec.rma_id, {"refund_id": rec.refund_id, "amount": rec.amount, "quote_id": q.quote_id}))
+        if self.store:  # code opens the follow-up; no model and no Jev is asked whether to
+            m = self.store.missions.open_refund_check(self.b.orders[q.order_id], rec, self.b.today, self.p)
+            self.s.log("follow_up", mission_id=m.mission_id, to_status=m.status,
+                       decision=f"opened by code: ask on {m.due_on.isoformat()} whether {m.subject} arrived")
         return {
             "status": "created", "rma_id": rec.rma_id, "refund_id": rec.refund_id, "amount": rec.amount,
             "resolution": rec.resolution, "label_url": rec.label_url,
@@ -301,12 +428,19 @@ class Toolbox:
     def _t_handoff_to_human(self, reason_code: str, summary: str) -> dict:
         return self.handoff(reason_code, summary)
 
-    def handoff(self, reason_code: str, summary: str) -> dict:
-        """Also called directly by the orchestrator (turn cap, repeated tool failure). One ticket per conversation."""
+    def handoff(self, reason_code: str, summary: str, extra: dict | None = None) -> dict:
+        """Also called directly by the orchestrator (turn cap, repeated tool failure) and by a follow-up that
+        the customer says is unresolved (bookly/missions.py). One ticket per conversation."""
         if self.s.handoff:
+            if self.store:  # store on: the person must see the later request too, and a priority flag sticks
+                ticket = next(t for t in self.b.tickets if t.ticket_id == self.s.handoff["ticket_id"])
+                ticket.payload.setdefault("later_requests", []).append({"reason_code": reason_code, "summary": summary})
+                ticket.payload.update(extra or {})
+                self._after_handoff(ticket, reason_code)
             return {"status": "queued", "ticket_id": self.s.handoff["ticket_id"],
                     "message_for_customer": self.kb.message("handoff", ticket_id=self.s.handoff["ticket_id"])}
         q = self.s.latest_quote()
+        waiting = self.store.missions.awaiting(self.s.verified_orders) if self.store else []
         payload = {
             "reason_code": reason_code,
             "summary": summary,
@@ -315,12 +449,37 @@ class Toolbox:
                               "reason": q.reason, "amount": q.decision.amount, "status": q.status} if q else None),
             "actions": [{"kind": a.kind, "ref": a.ref, **a.detail} for a in self.s.actions],
             "turn": self.s.turn,
+            **({"follow_ups": [m.view() for m in waiting]} if waiting else {}),  # the history a person needs
+            **(extra or {}),
         }
         ticket = self.b.create_ticket(reason_code, payload)
         self.s.handoff = {"ticket_id": ticket.ticket_id, "reason_code": reason_code}
         self.s.actions.append(Action("handoff", ticket.ticket_id, {"reason_code": reason_code}))
+        self._after_handoff(ticket, reason_code)
         return {"status": "queued", "ticket_id": ticket.ticket_id,
                 "message_for_customer": self.kb.message("handoff", ticket_id=ticket.ticket_id)}
+
+    def _after_handoff(self, ticket, reason_code: str) -> None:
+        """Store on: what a lost-package hand-off does to follow-ups. Runs for a new ticket and for a later
+        request added to this conversation's ticket."""
+        waiting = self.store.missions.awaiting(self.s.verified_orders) if self.store else []
+        message = self.kb.message("handoff", ticket_id=ticket.ticket_id)
+        if self.store and reason_code == "lost_package":
+            # A person now has the lost package again, so its open follow-up goes with them: code marks it
+            # escalated. The model made the hand-off; the follow-up's state is still changed only here.
+            for m in waiting:
+                if m.kind == "lost_package_check":
+                    m.status, m.ticket_id, m.message_for_customer = "escalated", ticket.ticket_id, message
+                    m.note(self.b.today, "handed_off_again", ticket_id=ticket.ticket_id)
+                    self.follow_up_outcomes[m.mission_id] = "escalate"
+                    self.s.log("follow_up", mission_id=m.mission_id, to_status=m.status,
+                               decision="escalated by code: the customer was handed to a person for the same package")
+            lost = [o for o in self.s.verified_orders if _likely_lost(self.b.orders[o], self.b.today, self.p)]
+            # One follow-up per lost package. After it escalates, a person owns the case; code does not reopen it.
+            if len(lost) == 1 and not any(m.order_id == lost[0] and m.kind == "lost_package_check" for m in self.store.missions.items):
+                m = self.store.missions.open_lost_package_check(self.b.orders[lost[0]], ticket.ticket_id, self.b.today)
+                self.s.log("follow_up", mission_id=m.mission_id, to_status=m.status,
+                           decision=f"opened by code: ask on {m.due_on.isoformat()} whether {m.subject} arrived")
 
 
 def result_json(result: dict) -> str:
