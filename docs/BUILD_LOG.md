@@ -80,6 +80,40 @@ The review asked how intent detection works today and at about fifty intents, an
 | The live two-request check in the web UI was not saved anywhere | Independent review | Re-run from the CLI and saved as `evals/results/2026-10-29-router-haiku/live_multi_request.txt` |
 
 
+## Jev and the cross-session store (2026-11-13, learning build)
+
+Built after the submission, on the branch `jev-memory`. Not part of the submission. Full write-up: [JEV.md](JEV.md).
+
+**Decisions I made**
+- The question: what does a decision model add to an agent that follows up on a conversation from weeks ago?
+- The scope: the router on Jev, recommendations from past orders, and a follow-up on an old case. I left the deal-alert idea out.
+- Live Jev calls on fictional data only, with a hard $2 limit.
+
+**Decisions the AI made, which I reviewed in the plan**
+- Jev judges language and code decides, with one truth table per decision in `bookly/judgments.py`. Jev stays out of the refund gate, confirmation, eligibility, amounts and dates.
+- Memory stores genre keys from a fixed list, never the customer's words, so a planted "I am a VIP" note has nowhere to land.
+- Code opens every follow-up, works out its dates and creates the escalation ticket. The conversational model only relays.
+
+**What the independent design review found before any code**
+| Finding | Fix |
+|---|---|
+| With a shared ledger, quote ids repeat across conversations (`Q-1001-1` in each), so a second, legitimate return would be read as already done | One quote counter for the whole store |
+| The gate looked a quote up in the ledger before it checked that the conversation issued it. With a shared ledger, a guessed quote id would return another customer's RMA and label | The gate now checks the conversation's own quotes first |
+| The gate's check and the ledger write were two steps, so two conversations could both pass | A lock and a per-book recheck inside `record_return` |
+| A new file in `procedures/` would change the prompt with the flags off | The new procedure text lives in `prompts/` and loads only with the store on |
+
+**What the tests caught during the build**
+| Finding | Fix |
+|---|---|
+| A second hand-off for the same lost package opened a second follow-up | One follow-up per package; after it escalates, a person owns the case |
+| With the flags off, the web page still showed the store's buttons: a `display: flex` rule overrode the `hidden` attribute | A rule that keeps hidden panels hidden; checked in the browser |
+
+**First live run (2026-11-13), reported as it came.** Router on Jev: needed procedure loaded 156 of 159, 91 ms against Haiku's 1,076 ms. Judgments: 94% outcome accuracy, 0 wrong-direction outcomes. Journeys: 6 of 7 pass all three runs, 0 wrong refunds in 39 conversations. The one failed run found a gap in the recommendation tool (no book description to answer from), not a wrong judgment. Jev cost $0.02 in total.
+
+**Second run, after three fixes I asked for (2026-11-13).** Picks carry the catalog description; each genre term gets its own question; the policy intent is two questions. Each wording change was checked on new items it was not written for (12 router items, 4 genre items): all correct. Router 159 of 159. Judgments 97%, 0 wrong direction. Journeys again 6 of 7: the failed run was a simulated customer asking the agent to place an order, which my check did not allow for. I left the check as it was and reported the miss.
+
+**Flags off, nothing changes.** The system prompt and the tool list hash the same on `main` and on this branch (prompt `79d6b291aa511b15`, 7,039 characters; tools `546dd11dc66c5fcd`, 6 tools). The 125 tests from `main` pass unchanged, beside 90 new ones. A test now pins both hashes.
+
 ## What the independent review of the finished build found (2026-10-13)
 
 | Finding | Owning layer | Fix |

@@ -157,6 +157,10 @@ Design, numbers and caveats: [docs/ROUTER.md](docs/ROUTER.md). The submitted ver
 
 How I would run this as a POV for Bookly: exit criteria signed before the build, with what this prototype already shows against each one, the commands Bookly's own team runs, the rollout and the business case as a formula, in [docs/BOOKLY_EVALUATION_PLAN.md](docs/BOOKLY_EVALUATION_PLAN.md).
 
+## Experiment after the submission: Jev and a cross-session store (2026-11-13)
+
+A learning build on the branch `jev-memory`, not merged into `main`. Off by default, and with it off the prompt and the tool list are byte-identical to `main`. It adds a decision model (TypeSafe's Jev) beside the agent, and a store that outlives one conversation: customer memory, recommendations from past orders, and follow-ups that come back to a case days later. Jev judges language, code decides, and Sonnet still words every reply. The design, the truth tables, the expectations written before the first run, and the results are in [docs/JEV.md](docs/JEV.md).
+
 ## Known limitations
 
 An independent security and code review (2026-10-22) found no critical or high issues. What remains, by choice for a prototype:
@@ -164,7 +168,7 @@ An independent security and code review (2026-10-22) found no critical or high i
 - **The approval cap is per request, not per order.** A customer could ask for the books of one order one at a time. Production checks the cap against the order's refunds to date.
 - **The ledger lives in one web session.** A refreshed page starts clean, which the demo uses on purpose. Production shares one ledger, so a book cannot be refunded twice from two chats.
 - **The refund reason is the customer's word, mapped by the model.** "Damaged" refunds without a return. Production adds evidence, such as a photo, and a per-customer damage-claim rate. This is the first code change above.
-- **No login, no session expiry.** The session id is a 128-bit random token and the only credential; the server trusts only localhost, caps messages at 2,000 characters and conversations at 40 turns, and handles one message per conversation at a time.
+- **No login, no session expiry.** The session id is a 128-bit random token and the only credential (the store demo's clock, ticket and reset endpoints on the `jev-memory` branch take no session id at all); the server trusts only localhost, caps messages at 2,000 characters and conversations at 40 turns, and handles one message per conversation at a time.
 - **The trace panel is an operator view.** Here the customer sees it. Production shows it to staff, behind auth.
 - **Eval transcripts hold names and emails.** All fictional (`@example.com`). Production redacts transcripts and sets a retention period.
 
