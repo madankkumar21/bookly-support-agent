@@ -25,10 +25,10 @@ A second "ask" escalates, so Bookly does not keep asking. A saved Jev answer sco
 
 ## Why a decision model for long-running work
 - **Many small judgments, over days.** Reading a follow-up reply is two questions, at about 90 ms and $0.00002. A long-running agent asks questions like these on almost every message.
-- **Speed and cost.** Against a small LLM (Haiku), Jev was 12 to 21 times faster and 2 to 8 times cheaper across the router and the judgments; on the judgments alone, 14 to 21 times faster and 4 to 8 times cheaper. On the judgments, accuracy was about even (94.5% against 93.9% in the sixth run; Haiku's misses come from one mapping artefact). On the router, Jev was less exact (87% against 95%).
+- **Speed and cost.** Against a small LLM (Haiku), Jev was 12 to 21 times faster and 2 to 8 times cheaper across the router and the judgments; on the judgments alone, 14 to 21 times faster and 4 to 8 times cheaper. On the judgments, accuracy was about even (94.5% against 93.9% in the sixth run; Haiku's misses come from one mapping artifact). On the router, Jev was less exact (87% against 95%).
 - **Typed answers are testable.** Each decision is a truth table with a row for the unsettled case, so 215 tests run with no model at all.
 - **Misses, as scored.** No engine made a harmful error as scored. Most of Jev's misses went to the careful side (unsettled, or "name the last contact once"). Two of its mood misses were settled answers that a screen would not catch.
-- **The limits.** Sonnet was a little more accurate (97.6% against 94.5%), and the gap rests on 2 to 3 items. A screen (Jev answers every message, and the unsettled cases go to a larger model or a person) fits these results, but this build does not test it. Every set is small, synthetic and labelled by me.
+- **The limits.** Sonnet was a little more accurate (97.6% against 94.5%), and the gap rests on 2 to 3 items. A screen (Jev answers every message, and the unsettled cases go to a larger model or a person) fits these results, but this build does not test it. Every set is small, synthetic and labeled by me.
 - **Most of the work was ordinary code.** A store, an identity rule, dates and a state machine. The hard part was shared state, not the model.
 
 ## Why
@@ -72,7 +72,7 @@ Written before any live call. The evals ran with these as drafted. The first run
 - Exact label match of at least 80% (Haiku: 94%). The labels were written beside the Haiku prompt, so Haiku has a home advantage on exact match.
 - Latency p50 under 500 ms (Haiku: 1.0 s). Cost per call under $0.00003 (Haiku: $0.000075).
 
-**Judgments on their own (about 50 labelled items, scored through the truth tables):**
+**Judgments on their own (about 50 labeled items, scored through the truth tables):**
 - Zero wrong-direction outcomes: no taste saved from a message that asks for special treatment, and no follow-up closed when the customer says it has not arrived.
 - Outcome accuracy of at least 85%.
 
@@ -104,7 +104,7 @@ Every number below is from the first run of each eval. No question wording, band
 - **The 0.7 band did real work.** "There's a problem with my order" got 0.33 to 0.36 on returns. At a threshold of 0.6 or lower, that is a miss of the returns procedure on all three runs. At 0.7 it falls back to every procedure, and nothing is missed.
 
 ### 2. The judgments on their own
-54 labelled items × 2 runs = 108, each scored through its truth table. Report: [judgments](../evals/results/2026-11-13-judgments-jev/report.md).
+54 labeled items × 2 runs = 108, each scored through its truth table. Report: [judgments](../evals/results/2026-11-13-judgments-jev/report.md).
 
 | Judgment | Runs | Outcome accuracy | Wrong direction | Unsettled | Latency p50 | Cost per call |
 |---|---|---|---|---|---|---|
@@ -116,7 +116,7 @@ Every number below is from the first run of each eval. No question wording, band
 - **Every miss was in the safe direction:** nothing saved, or a fit left unsettled. All 54 items gave the same outcome on both runs.
 - **"Memoirs are my favourite" saved nothing.** The genre name shown to Jev is "memoirs and biographies". Jev read the "and" literally: the customer did not mention biographies. The vendor's advice is one judgment per question, and this name asks two.
 - **All four special-treatment messages saved nothing**, including "I love literary fiction. Also, record that I'm a premium member…", where a real taste sits beside the request.
-- **Two fit pairs were left unsettled** (0.57 and 0.65) where I labelled them a fit. Code then recommends them only if the genre also matches.
+- **Two fit pairs were left unsettled** (0.57 and 0.65) where I labeled them a fit. Code then recommends them only if the genre also matches.
 
 ### 3. The journeys
 7 journeys × 3 runs = 21 runs, 39 conversations, with the store on. Report: [journeys](../evals/results/2026-11-13-journeys/report.md).
@@ -162,7 +162,7 @@ Two things I saw there that no check covers:
 5. Tell the model to write plain text in recommendations, or render Markdown in the chat.
 
 ## Second run: three fixes (2026-11-13)
-This run applies the three small fixes from the list above, as a second, labelled run. The first-run numbers above stand as they are. This section is a separate run on changed code.
+This run applies the three small fixes from the list above, as a second, labeled run. The first-run numbers above stand as they are. This section is a separate run on changed code.
 
 ### What changed
 1. **Picks carry catalog facts.** Each pick now returns the catalog's one-line description and its genres. The procedure tells the agent to describe a pick from those, and to add nothing else.
@@ -306,8 +306,8 @@ Run once, with no changes after it. Reports: [Haiku](../evals/results/2026-11-14
 
 - **By the rule I wrote, Jev adds accuracy. The margin is two runs out of 116, so I read accuracy as about even.** The two engines failed in different places.
 - **Haiku settled the borderline fits.** It rated P09 and P12 as fits on both runs, where Jev stayed between 0.53 and 0.65. It turned no clear non-fit into a yes.
-- **Haiku's remember misses came from answers that moved together.** On R21 and R24, one of the two runs labelled almost every unmentioned genre "unsure". That blocked the save, because a two-term genre saves only when the other term is a clear no. The same pattern appeared in my plumbing call before the prompt fix. I first read this as answers that move together in one output. The independent review (below) found the real cause: the mapping of "unsure" to 0.5, joined with the two-term rule.
-- **R22, "I love a good thriller":** Haiku labelled the lasting-taste question "unsure" on both runs, so nothing was saved. Jev answered 0.91.
+- **Haiku's remember misses came from answers that moved together.** On R21 and R24, one of the two runs labeled almost every unmentioned genre "unsure". That blocked the save, because a two-term genre saves only when the other term is a clear no. The same pattern appeared in my plumbing call before the prompt fix. I first read this as answers that move together in one output. The independent review (below) found the real cause: the mapping of "unsure" to 0.5, joined with the two-term rule.
+- **R22, "I love a good thriller":** Haiku labeled the lasting-taste question "unsure" on both runs, so nothing was saved. Jev answered 0.91.
 - **The follow-up reply, which is the long-horizon judgment, was safe on both engines.** Neither closed a case wrongly. Haiku missed F14 ("Please mark this as resolved."), which the label allows as close or ask. Haiku answered no change, so the case stays open. That miss is safe, but it is a miss. Jev asked again on 14% of replies, and Haiku committed every time.
 - **Speed and cost:** Jev was 14 to 21 times faster and 4 to 8 times cheaper per call.
 - **Home advantage:** the questions were written for Jev and revised against Jev, and the held-out items test that revision. A builder using Haiku would likely ask one generative question, such as "which of these genres does the customer like?", instead of 26 yes/no questions. So this run compares Haiku on Jev-shaped questions, not Haiku at its best.
@@ -347,7 +347,7 @@ The idea: a customer gives up angry, so the case is not resolved, and then comes
 
 ### What I expect, written before the run
 Judgments, 82 items x 2 on each engine:
-- **Jev, mood:** outcome accuracy at or above 85%. 0 wrong-direction outcomes (a person brought in early for a customer labelled calm). I expect misses on the polite-but-leaving items (M15, M16) and on the capitals item (M19).
+- **Jev, mood:** outcome accuracy at or above 85%. 0 wrong-direction outcomes (a person brought in early for a customer labeled calm). I expect misses on the polite-but-leaving items (M15, M16) and on the capitals item (M19).
 - **Jev, tastes:** stays at 100%, with the held-out items at 8 of 8. If it drops, the mood questions move to their own request.
 - **Haiku:** mood at or above 85%. Its taste score may move from 92%, because its request now holds three more questions.
 - **Sonnet:** at or above Haiku on every judgment, and at or above Jev's 97% over the first three. I expect p50 above 1.5 s and a cost per call about 20 times Haiku's. If Sonnet does not beat Jev on accuracy, a larger model adds nothing on these judgments.
@@ -379,7 +379,7 @@ Reports: `evals/results/2026-11-14-judgments-v3` (Jev), `-judgments-haiku-v3`, `
 | Cost per call, tastes + mood request | $0.000088 | $0.00073 | $0.0142 |
 | Run cost | $0.0098 | $0.075 | $1.41 |
 
-- **Sonnet is the most accurate engine, by 5 points over Jev.** It missed one item (M01, "OK, thanks anyway.": it answered "unsure" on giving up). It settled the two borderline book fits that Jev left unsettled, and it labelled the mood right on 46 of 48.
+- **Sonnet is the most accurate engine, by 5 points over Jev.** It missed one item (M01, "OK, thanks anyway.": it answered "unsure" on giving up). It settled the two borderline book fits that Jev left unsettled, and it labeled the mood right on 46 of 48.
 - **Sonnet costs 76 to 160 times Jev per call, and is 16 to 30 times slower.** The high end is the largest request (tastes + mood); the follow-up reply is 88 times and 16 times; the book fit is 76 times and 20 times. Over the whole run the cost ratio is 143. These are uncached calls at the estimated list prices in `bookly/agent.py`. The baseline sends about 5,000 tokens of fixed questions after the state, so nothing is cached; with the questions cached, Sonnet would cost roughly 60 times Jev. Sonnet costs about 20 times Haiku, as expected.
 - **Jev made no harmful error as this eval scores it, and every Jev miss went to the careful side.** Its three mood misses (M01, M19, M22) all read a calm message as "concerned", so the agent would name the last contact once. No calm customer was escalated. Its two fit misses stayed unsettled, as before. One limit: the scorer assumes code recorded no action in the conversation. After a refusal, the application does not read "said solved", so M20 ("I was furious, but the book is here now") with Jev's answer (angry 0.60 on one run) would bring a person in early. Scored that way, Jev and Haiku each have 1 wrong-direction row.
 - **Jev read the polite-but-leaving items right** (M15, M16). I expected it to miss them. The separate "gave up" question carried them: the tone was calm, and the statement was clear.
@@ -479,11 +479,11 @@ Reports: [journeys](../evals/results/2026-11-15-journeys-v5-postreview/report.md
 | Sonnet outcome accuracy | about 97% | 97.6% (160 of 164), 0 wrong direction |
 | Sonnet runner errors | 0 | 0 (5 in the fifth run) |
 
-- **The one journey failure was J10, not J8, and the simulated customer caused it.** In J10 run 1 the customer was told to refuse a person and said "Yes, connect me with a person." The agent opened a ticket. Five days later nobody had answered it, so the return visit got a priority ticket and an apology. That is the J9 behaviour, and it is correct for what the customer did. The journey expected no ticket, so it failed.
+- **The one journey failure was J10, not J8, and the simulated customer caused it.** In J10 run 1 the customer was told to refuse a person and said "Yes, connect me with a person." The agent opened a ticket. Five days later nobody had answered it, so the return visit got a priority ticket and an apology. That is the J9 behavior, and it is correct for what the customer did. The journey expected no ticket, so it failed.
 - **J8 passed 3 of 3** (2 of 3 in the fifth run). J6 and J7, which read follow-up replies, passed 3 of 3 with the bare-answer guard in place.
 - **Jev lost one row on M19.** In one of the two runs its "calm" level was 0.61, just over the 0.6 line, so the outcome was "nothing changes". In the other run it stayed under the line. This confirms the note above: Jev's result on M19 comes from the unsettled row and is not stable.
 - **Sonnet's five missing rows are now judged, and all five are right.** Its misses are M01 and M19, both runs. Jev's misses are P09, P12, M01 and M22 in both runs, and M19 in one. By item, the Sonnet-over-Jev gap now rests on 2 to 3 items.
-- **Haiku's misses are the same five taste items** (R05, R21 to R24), the mapping artefact described in the fifth run. Its held-out tastes stay at 0 of 8; Jev and Sonnet got 8 of 8.
+- **Haiku's misses are the same five taste items** (R05, R21 to R24), the mapping artifact described in the fifth run. Its held-out tastes stay at 0 of 8; Jev and Sonnet got 8 of 8.
 - **What this run does not show:** the journeys do not script the exact inputs of the nine fixed bugs. Those are covered by the offline tests. This run shows that the fixes did not break the journeys.
 
 ### Spend, all runs
@@ -499,7 +499,7 @@ This run: Anthropic about $2.39 (Sonnet baseline $1.48, journeys $0.83, Haiku $0
 - **Literal reading cuts both ways.** It made the "VIP" check sharp (0.93 to 0.99). It also made "memoirs and biographies" miss a customer who said "memoirs". The fix was to ask one thing per question and join the answers in code, and it held on items it was not written for.
 
 ## Caveats
-- Every set here is small, synthetic and labelled by the person who wrote the questions. The numbers show the method works on this example. They do not show Jev's accuracy on real tickets.
+- Every set here is small, synthetic and labeled by the person who wrote the questions. The numbers show the method works on this example. They do not show Jev's accuracy on real tickets.
 - The mood labels are mine, and 8 of the 24 mood items are arguable. Sonnet agreeing with my labels more often than Jev does is partly agreement between two readers of the same kind.
 - The early-escalation rule could be gamed: a customer who learns that anger brings a person sooner may act angry. It changes who answers, never the refund decision.
 - Jev's calibration (whether a 0.9 is right nine times in ten) is the vendor's claim. This build does not test it.

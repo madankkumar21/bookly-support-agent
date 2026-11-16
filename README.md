@@ -89,7 +89,7 @@ Customer ─▶ Web chat / CLI
 
 Tool contracts (`name(inputs) → {status, …}`):
 
-| Tool | Returns | Key behaviour |
+| Tool | Returns | Key behavior |
 |---|---|---|
 | `get_order(order_id, email)` | `found` / `no_match` / `locked` | A wrong email and an unknown order look the same, so nothing leaks. After three misses, code locks the tool for the conversation |
 | `check_return_eligibility(order_id, item_ids, reason)` | `refund_no_return` / `return_for_refund` (with `quote_id`, amount, terms) / `ineligible` / `needs_human` / `needs_input` | Read-only. Each new check voids earlier quotes |
@@ -149,9 +149,9 @@ Also decided, with reasons, in [docs/BUILD_LOG.md](docs/BUILD_LOG.md):
 ## Added after the review (2026-10-27)
 
 The review asked how intent routing works at about fifty intents, and how one message with several requests is handled. I built the router, off by default (`BOOKLY_ROUTER=1`), and measured it:
-- **On its own:** on 60 synthetic labelled messages, three runs each, it loaded the needed procedure in all 159 classifications that needed one, with 94% exact labels. Every inexact answer added a procedure; none dropped one.
+- **On its own:** on 60 synthetic labeled messages, three runs each, it loaded the needed procedure in all 159 classifications that needed one, with 94% exact labels. Every inexact answer added a procedure; none dropped one.
 - **In the agent:** in same-day k=5 runs, 16 of 16 scenarios passed with the router on, with 0 wrong refunds, at 0.8 s more median latency and 3% more cost. At three intents that buys nothing, so it stays off. The case for it starts at dozens of procedures.
-- **Several requests in one message:** "return a damaged book, and recommend something similar" is labelled returns + other. In a [recorded live run](evals/results/2026-10-29-router-haiku/live_multi_request.txt), the agent asked for the return's order details and offered a person for the recommendation, in the same reply.
+- **Several requests in one message:** "return a damaged book, and recommend something similar" is labeled returns + other. In a [recorded live run](evals/results/2026-10-29-router-haiku/live_multi_request.txt), the agent asked for the return's order details and offered a person for the recommendation, in the same reply.
 
 Design, numbers and caveats: [docs/ROUTER.md](docs/ROUTER.md). The submitted version is tagged `submitted-2026-10-22`.
 
