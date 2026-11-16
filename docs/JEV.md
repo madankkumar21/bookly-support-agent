@@ -420,6 +420,8 @@ A separate reviewer (Claude Fable, high effort, no access to my conclusions) rea
 
 **What these fixes do not have:** a live run. The saved eval runs were made before the fixes, and no eval was repeated. The bare-answer fix was inferred from saved Jev answers ("yes" alone scored 0.98 for "arrived"), not reproduced live.
 
+**Update 2026-11-15:** the sixth run below repeated the suite on the fixed code. It is a regression run; it does not script the exact inputs of the nine fixed bugs.
+
 **Known and left as they are:**
 - An answered order-status chat that ends "OK, thanks anyway." is recorded as "nothing done", and Jev read that message as concerned. The next visit would open with "I can see your last contact did not resolve this".
 - The router comparison used a 0.7 threshold for Jev and 0.6 for Haiku. At 0.6, Jev misses the returns procedure on one item in both runs.
@@ -428,8 +430,38 @@ A separate reviewer (Claude Fable, high effort, no access to my conclusions) rea
 - The prompt tells the agent not to say that a record of the last contact's mood exists. A production design would need a disclosure decision here.
 - The Jev spend totals come from `logs/jev_calls.jsonl`, which is not in the repo because it holds raw payloads.
 
+## Sixth run: a regression run of the suite on the fixed code (2026-11-15)
+The review fixes changed store-on code, so all ten journeys and the three judgment runs were repeated. No question, label or threshold changed between the fifth run (as rescored) and this one.
+
+### What I expected, written before the run
+- Journeys J1 to J10, k=3: J9 and J10 pass 3 of 3, J1 to J7 pass as in their last runs, 0 wrong refunds. J8 can fail once if the simulated customer goes off-script.
+- Judgments, 82 items × 2: Jev about 95%, Haiku about 94%, Sonnet about 97%, 0 wrong-direction outcomes on all. Sonnet has 0 runner errors, because the race is fixed.
+- Spend: about $2.50 on the Anthropic key and about $0.04 on Jev.
+
+### Results of the sixth run
+Reports: [journeys](../evals/results/2026-11-15-journeys-v5-postreview/report.md), [Jev](../evals/results/2026-11-15-judgments-v4-postreview/report.md), [Haiku](../evals/results/2026-11-15-judgments-haiku-v4-postreview/report.md), [Sonnet](../evals/results/2026-11-15-judgments-sonnet-v4-postreview/report.md).
+
+| | Expected | Got |
+|---|---|---|
+| Journeys passing all 3 runs | 9 or 10 of 10 | 9 of 10 (29 of 30 runs) |
+| Wrong refunds | 0 | 0 in 57 conversations |
+| Jev outcome accuracy | about 95% | 94.5% (155 of 164), 0 wrong direction |
+| Haiku outcome accuracy | about 94% | 93.9% (154 of 164), 0 wrong direction |
+| Sonnet outcome accuracy | about 97% | 97.6% (160 of 164), 0 wrong direction |
+| Sonnet runner errors | 0 | 0 (5 in the fifth run) |
+
+- **The one journey failure was J10, not J8, and the simulated customer caused it.** In J10 run 1 the customer was told to refuse a person and said "Yes, connect me with a person." The agent opened a ticket. Five days later nobody had answered it, so the return visit got a priority ticket and an apology. That is the J9 behaviour, and it is correct for what the customer did. The journey expected no ticket, so it failed.
+- **J8 passed 3 of 3** (2 of 3 in the fifth run). J6 and J7, which read follow-up replies, passed 3 of 3 with the bare-answer guard in place.
+- **Jev lost one row on M19.** In one of the two runs its "calm" level was 0.61, just over the 0.6 line, so the outcome was "nothing changes". In the other run it stayed under the line. This confirms the note above: Jev's result on M19 comes from the unsettled row and is not stable.
+- **Sonnet's five missing rows are now judged, and all five are right.** Its misses are M01 and M19, both runs. Jev's misses are P09, P12, M01 and M22 in both runs, and M19 in one. By item, the Sonnet-over-Jev gap now rests on 2 to 3 items.
+- **Haiku's misses are the same five taste items** (R05, R21 to R24), the mapping artefact described in the fifth run. Its held-out tastes stay at 0 of 8; Jev and Sonnet got 8 of 8.
+- **What this run does not show:** the journeys do not script the exact inputs of the nine fixed bugs. Those are covered by the offline tests. This run shows that the fixes did not break the journeys.
+
+### Spend, all runs
+This run: Anthropic about $2.39 (Sonnet baseline $1.48, journeys $0.83, Haiku $0.075), Jev $0.024. In total: Jev $0.085 for 1,451 calls against the $2 limit, and about $5.80 on the Anthropic key.
+
 ## What this build showed
-- **Sonnet is a little more accurate than Jev on these judgments, and Jev is far cheaper and faster.** Sonnet scored 97% against Jev's 95% after one label change (99% against 94% before it), at 76 to 160 times the cost per call and 16 to 30 times the time (uncached, estimated prices). The accuracy gap rests on 2 items. Neither made a harmful error as scored. Jev's misses all went to the careful side (unsettled, or "name the last contact once"). A fitting design is a screen: Jev answers every message, and the unsettled cases go to a larger model or a person. This build does not test that two-step design, and two of Jev's mood misses were settled answers that a screen would not catch.
+- **Sonnet is a little more accurate than Jev on these judgments, and Jev is far cheaper and faster.** Sonnet scored 97% against Jev's 95% after one label change (99% against 94% before it; 97.6% against 94.5% in the repeat run), at 76 to 160 times the cost per call and 16 to 30 times the time (uncached, estimated prices). The accuracy gap rests on 2 items. Neither made a harmful error as scored. Jev's misses all went to the careful side (unsettled, or "name the last contact once"). A fitting design is a screen: Jev answers every message, and the unsettled cases go to a larger model or a person. This build does not test that two-step design, and two of Jev's mood misses were settled answers that a screen would not catch.
 - **A long-running agent needs two kinds of memory about a customer, and only one needs a model.** What was done (a refusal, a ticket nobody answered, an offer left unconfirmed) is a code fact. How the customer left (angry, giving up) is a language judgment, and one Score plus two Nouls per message covered it at no extra call.
 - **Against a small LLM, Jev's measured gain was speed and cost, not accuracy.** On the router, Jev was less exact than Haiku (87% against 95%) and fell back about ten times as often. On the judgments, accuracy was about even. Jev was 12 to 21 times faster and 2 to 8 times cheaper. Its router probabilities tracked accuracy. Both engines repeated almost every answer (router: 58 of 60 each; judgments, fifth run: 82 of 82 each). Haiku settled more borderline cases.
 - **The decision model's share of the long-horizon work was small.** Reading a follow-up reply is two questions, at about 90 ms and $0.00002. Most of the work was ordinary code: a store, an identity rule, dates and a state machine.

@@ -24,6 +24,10 @@ Each folder holds `report.md` (read this first), `summary.json` and `transcripts
 | `2026-11-14-judgments-haiku-v3` | The same 82 items on Haiku | 93%; 2 wrong direction (a book title in capitals read as angry); tastes 79%; held-out 0/8 |
 | `2026-11-14-judgments-sonnet` | The same 82 items on Sonnet | 99% of 159 judged (5 runner errors on 3 taste items); 0 wrong direction; 76x to 160x Jev's cost per call, uncached |
 | `2026-11-14-journeys-v4-contact` | Journeys J8 to J10: how the last contact ended (`bookly/contact.py`), k=3 | J9 and J10 3/3; J8 2/3 (the simulated customer went off-script once); 0 wrong refunds in 18 |
+| `2026-11-15-journeys-v5-postreview` | Sixth run, after the review fixes: all ten journeys, k=3 | 9/10 pass all runs (29/30); J10 failed once (the simulated customer asked for a person against its script); 0 wrong refunds in 57 |
+| `2026-11-15-judgments-v4-postreview` | Sixth run: the 82 items on Jev, with the M19 relabel | 94.5% (155/164); 0 wrong direction; held-out 8/8 |
+| `2026-11-15-judgments-haiku-v4-postreview` | The same on Haiku | 93.9% (154/164); 0 wrong direction; held-out 0/8 |
+| `2026-11-15-judgments-sonnet-v4-postreview` | The same on Sonnet, with the runner race fixed | 97.6% (160/164); 0 wrong direction; 0 runner errors |
 | `2026-11-13-journeys-v3-j1` | Third run, J1 only: the agent recommends only when asked; the simulated customer no longer tries to buy | 1/1 passes all runs (3/3); 0 wrong refunds in 6 conversations |
 | `2026-11-13-journeys-smoke` | History: one journey, k=1, to check the new runner before the full run | 1/1 |
 | `2026-10-13-sonnet-k5` | History: the first k=5 run, before the claim-check fix | 15/16; R8 failed on a false block by the claim check |
