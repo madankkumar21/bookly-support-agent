@@ -159,7 +159,9 @@ How I would run this as a POV for Bookly: exit criteria signed before the build,
 
 ## Experiment after the submission: Jev and a cross-session store (2026-11-13)
 
-A learning build on the branch `jev-memory`, not merged into `main`. Off by default, and with it off the prompt and the tool list are byte-identical to `main`. It adds a decision model (TypeSafe's Jev) beside the agent, and a store that outlives one conversation: customer memory, recommendations from past orders, and follow-ups that come back to a case days later. Jev judges language, code decides, and Sonnet still words every reply. The design, the truth tables, the expectations written before the first run, and the results are in [docs/JEV.md](docs/JEV.md). A two-minute summary, a diagram and the case for a decision model are at the top of that file.
+A learning build on the branch `jev-memory`, not merged into `main`. Off by default, and with it off the prompt and the tool list are byte-identical to `main`. It adds a decision model (TypeSafe's Jev) beside the agent, and a store that outlives one conversation: customer memory, recommendations from past orders, and follow-ups that come back to a case days later. Jev judges language, code decides, and Sonnet still words every reply. The design, the truth tables, the expectations written before the first run, and the results are in [docs/JEV.md](docs/JEV.md). A two-minute summary, an architecture diagram and the case for a decision model are at the top of that file.
+
+![Jev build architecture](docs/jev-architecture.png)
 
 ## Known limitations
 

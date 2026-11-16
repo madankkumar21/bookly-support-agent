@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" width="1200" height="820" role="img" aria-label="Bookly agent with Jev: per message, Jev answers typed questions, code decides with truth tables and owns every write, Sonnet words every reply; a store and a clock carry follow-ups and the last contact across days.">
+<style>
+.zone{fill:#f7f9fc;stroke:#b9c3d1;stroke-width:1.2;stroke-dasharray:6 4}
+.zl{fill:#5b6575;font:600 11px Menlo,Consolas,"DejaVu Sans Mono",monospace;letter-spacing:.08em}
+.zn{fill:#5b6575;font:11px Menlo,Consolas,"DejaVu Sans Mono",monospace}
+.node{fill:#ffffff;stroke:#141b26;stroke-width:1.3}
+.node.hi{fill:#fff4c7}
+.node.dsh{stroke-dasharray:5 4;stroke:#7a8494}
+.nt{fill:#141b26;font:600 13.5px Helvetica,Arial,sans-serif}
+.ns{fill:#5b6575;font:11px Menlo,Consolas,"DejaVu Sans Mono",monospace}
+.pillnode{fill:#141b26}.pilltext{fill:#ffffff;font:600 12.5px Helvetica,Arial,sans-serif}
+.e{fill:none;stroke-width:2}.ew{stroke:#2f5bd3}.ef{stroke:#c9581a}.ea{stroke:#16824f}.ep{stroke:#7a8494}
+.bc{stroke:#ffffff;stroke-width:1.5}.bcw{fill:#2f5bd3}.bcf{fill:#c9581a}.bca{fill:#16824f}
+.bt{fill:#ffffff;font:600 10.5px Menlo,Consolas,"DejaVu Sans Mono",monospace}
+.el{font:11px Menlo,Consolas,"DejaVu Sans Mono",monospace}.elw{fill:#2f5bd3}.elf{fill:#c9581a}.ela{fill:#16824f}.elp{fill:#7a8494}
+.mk-w{fill:#2f5bd3}.mk-f{fill:#c9581a}.mk-a{fill:#16824f}.mk-p{fill:#7a8494}
+.lg{fill:#5b6575;font:12px Menlo,Consolas,"DejaVu Sans Mono",monospace}
+</style>
+<rect width="1200" height="820" fill="#ffffff"/>
+<defs>
+<marker id="aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" class="mk-w"/></marker>
+<marker id="af" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" class="mk-f"/></marker>
+<marker id="aa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" class="mk-a"/></marker>
+<marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" class="mk-p"/></marker>
+</defs>
+<rect class="zone" x="20" y="30" width="340" height="440" rx="10"/>
+<text class="zl" x="34" y="50">AGENT · bookly/agent.py</text>
+<rect class="zone" x="400" y="30" width="360" height="440" rx="10"/>
+<text class="zl" x="414" y="50">JEV · DECISION MODEL · jev.py</text>
+<rect class="zone" x="800" y="30" width="380" height="440" rx="10"/>
+<text class="zl" x="814" y="50">CODE DECIDES · judgments.py</text>
+<rect class="zone" x="20" y="520" width="340" height="200" rx="10"/>
+<text class="zl" x="34" y="540">DAYS LATER</text>
+<rect class="zone" x="400" y="520" width="780" height="200" rx="10"/>
+<text class="zl" x="414" y="540">STORE · store.py</text>
+<text class="zn" x="420" y="76">typed questions in, probabilities out</text>
+<text class="zn" x="420" y="92">writes no text, keeps nothing between calls</text>
+<text class="zn" x="820" y="76">reads each probability through a truth table</text>
+<text class="zn" x="820" y="92">owns every write and every refund</text>
+<rect class="pillnode" x="40" y="58" width="300" height="32" rx="16.0"/>
+<text class="pilltext" x="190.0" y="78.5" text-anchor="middle">customer message</text>
+<rect class="node" x="40" y="112" width="300" height="70" rx="8"/>
+<text class="nt" x="54" y="134">follow-up check</text>
+<text class="ns" x="54" y="152">before the model sees the message</text>
+<text class="ns" x="54" y="167">only if a follow-up is waiting</text>
+<rect class="node hi" x="40" y="202" width="300" height="90" rx="8"/>
+<text class="nt" x="54" y="224">Sonnet 5.5</text>
+<text class="ns" x="54" y="242">follows the procedures, picks tools</text>
+<text class="ns" x="54" y="257">words every reply</text>
+<text class="ns" x="54" y="272">calls the recommend tool</text>
+<rect class="node" x="40" y="312" width="300" height="70" rx="8"/>
+<text class="nt" x="54" y="334">remember</text>
+<text class="ns" x="54" y="352">after the reply, once one email</text>
+<text class="ns" x="54" y="367">is verified</text>
+<rect class="node" x="40" y="402" width="300" height="52" rx="8"/>
+<text class="nt" x="54" y="424">refund gate · gate.py</text>
+<text class="ns" x="54" y="442">verified order, policy, cap, confirmation</text>
+<rect class="node" x="420" y="112" width="320" height="70" rx="8"/>
+<text class="nt" x="434" y="134">follow_up</text>
+<text class="ns" x="434" y="152">arrived?  not arrived?</text>
+<text class="ns" x="434" y="167">two yes/no questions</text>
+<rect class="node" x="420" y="202" width="320" height="90" rx="8"/>
+<text class="nt" x="434" y="224">recommend</text>
+<text class="ns" x="434" y="242">would a reader of her books</text>
+<text class="ns" x="434" y="257">also choose this candidate?</text>
+<text class="ns" x="434" y="272">one question per candidate</text>
+<rect class="node" x="420" y="312" width="320" height="70" rx="8"/>
+<text class="nt" x="434" y="334">remember</text>
+<text class="ns" x="434" y="352">lasting taste per genre · special treatment</text>
+<text class="ns" x="434" y="367">mood score · gave up · said solved</text>
+<rect class="node dsh" x="420" y="402" width="320" height="52" rx="8"/>
+<text class="nt" x="434" y="424">not asked</text>
+<text class="ns" x="434" y="442">refunds, eligibility, amounts, dates</text>
+<rect class="node" x="820" y="112" width="340" height="70" rx="8"/>
+<text class="nt" x="834" y="134">decide_follow_up</text>
+<text class="ns" x="834" y="152">close · ask · escalate · no change</text>
+<text class="ns" x="834" y="167">close needs 0.85; a second ask escalates</text>
+<rect class="node" x="820" y="202" width="340" height="90" rx="8"/>
+<text class="nt" x="834" y="224">decide_recommend</text>
+<text class="ns" x="834" y="242">filters stock, owned and disliked</text>
+<text class="ns" x="834" y="257">genres, then ranks the top three</text>
+<text class="ns" x="834" y="272">recommend.py</text>
+<rect class="node" x="820" y="312" width="340" height="70" rx="8"/>
+<text class="nt" x="834" y="334">decide_remember · decide_mood</text>
+<text class="ns" x="834" y="352">saves genre keys from a fixed list</text>
+<text class="ns" x="834" y="367">nothing saved on special treatment</text>
+<text class="zn" x="820" y="418">every table has an unsettled row,</text>
+<text class="zn" x="820" y="433">so 215 tests run with no model</text>
+<rect class="node" x="40" y="552" width="300" height="72" rx="8"/>
+<text class="nt" x="54" y="574">clock · missions.run_due</text>
+<text class="ns" x="54" y="592">sends the follow-ups that are due</text>
+<text class="ns" x="54" y="607">14 days, no reply: close or ticket</text>
+<rect class="node" x="40" y="640" width="300" height="64" rx="8"/>
+<text class="nt" x="54" y="662">next visit · contact.on_return</text>
+<text class="ns" x="54" y="680">code: how the last contact ended</text>
+<text class="ns" x="54" y="695">plus the mood Jev read</text>
+<rect class="node" x="420" y="552" width="230" height="90" rx="8"/>
+<text class="nt" x="434" y="574">contact.py</text>
+<text class="ns" x="434" y="592">how the last contact ended:</text>
+<text class="ns" x="434" y="607">refusal, ticket, mood</text>
+<rect class="node" x="670" y="552" width="230" height="90" rx="8"/>
+<text class="nt" x="684" y="574">memory.py</text>
+<text class="ns" x="684" y="592">reading tastes as genre</text>
+<text class="ns" x="684" y="607">keys, never the customer's</text>
+<text class="ns" x="684" y="622">own words</text>
+<rect class="node" x="920" y="552" width="240" height="90" rx="8"/>
+<text class="nt" x="934" y="574">missions.py</text>
+<text class="ns" x="934" y="592">follow-ups: refund check,</text>
+<text class="ns" x="934" y="607">lost package; due dates</text>
+<text class="ns" x="934" y="622">and status in code</text>
+<text class="zn" x="420" y="664">outlives one conversation; held in memory, so it survives a new chat, not a restart</text>
+<path class="e ew" d="M190 90 V110" marker-end="url(#aw)"/>
+<path class="e ew" d="M190 182 V200" marker-end="url(#aw)"/>
+<path class="e ew" d="M190 292 V310" marker-end="url(#aw)"/>
+<path class="e ew" d="M340 147 H418" marker-end="url(#aw)"/>
+<circle class="bc bcw" cx="379" cy="147" r="9"/>
+<text class="bt" x="379" y="150.6" text-anchor="middle">2</text>
+<text class="el elw" x="379" y="134" text-anchor="middle">their reply</text>
+<path class="e ew" d="M740 147 H818" marker-end="url(#aw)"/>
+<circle class="bc bcw" cx="779" cy="147" r="9"/>
+<text class="bt" x="779" y="150.6" text-anchor="middle">3</text>
+<text class="el elw" x="779" y="134" text-anchor="middle">probs</text>
+<path class="e ew" d="M340 247 H418" marker-end="url(#aw)"/>
+<circle class="bc bcw" cx="379" cy="247" r="9"/>
+<text class="bt" x="379" y="250.6" text-anchor="middle">4</text>
+<text class="el elw" x="379" y="234" text-anchor="middle">tool call</text>
+<path class="e ew" d="M740 247 H818" marker-end="url(#aw)"/>
+<circle class="bc bcw" cx="779" cy="247" r="9"/>
+<text class="bt" x="779" y="250.6" text-anchor="middle">5</text>
+<path class="e ea" d="M340 347 H418" marker-end="url(#aa)"/>
+<circle class="bc bca" cx="379" cy="347" r="9"/>
+<text class="bt" x="379" y="350.6" text-anchor="middle">6</text>
+<text class="el ela" x="379" y="334" text-anchor="middle">message</text>
+<path class="e ea" d="M740 347 H818" marker-end="url(#aa)"/>
+<circle class="bc bca" cx="779" cy="347" r="9"/>
+<text class="bt" x="779" y="350.6" text-anchor="middle">7</text>
+<circle class="bc bcw" cx="190" cy="100" r="9"/>
+<text class="bt" x="190" y="103.6" text-anchor="middle">1</text>
+<path class="e ef" d="M1160 147 H1186 V597 H1162" marker-end="url(#af)"/>
+<circle class="bc bcf" cx="1186" cy="300" r="9"/>
+<text class="bt" x="1186" y="303.6" text-anchor="middle">8</text>
+<text class="el elf" x="1176" y="470" text-anchor="end">status</text>
+<path class="e ea" d="M1060 382 V484 H620 V550" marker-end="url(#aa)"/>
+<circle class="bc bca" cx="720" cy="484" r="9"/>
+<text class="bt" x="720" y="487.6" text-anchor="middle">9</text>
+<text class="el ela" x="660" y="476" text-anchor="middle">mood</text>
+<path class="e ea" d="M1120 382 V502 H785 V550" marker-end="url(#aa)"/>
+<text class="el ela" x="960" y="516" text-anchor="middle">genre keys</text>
+<path class="e ef" d="M340 572 H392 V690 H1040 V644" marker-end="url(#af)"/>
+<circle class="bc bcf" cx="700" cy="690" r="9"/>
+<text class="bt" x="700" y="693.6" text-anchor="middle">10</text>
+<text class="el elf" x="720" y="708" text-anchor="start">follow-ups sent; 14-day expiry</text>
+<path d="M420 612 H372 V672 H342" fill="none" stroke="#ffffff" stroke-width="7"/>
+<path class="e ea" d="M420 612 H372 V672 H342" marker-end="url(#aa)"/>
+<circle class="bc bca" cx="372" cy="640" r="9"/>
+<text class="bt" x="372" y="643.6" text-anchor="middle">11</text>
+<path class="e ea" d="M40 672 H28 V247 H38" marker-end="url(#aa)"/>
+<circle class="bc bca" cx="28" cy="460" r="9"/>
+<text class="bt" x="28" y="463.6" text-anchor="middle">12</text>
+<text class="el ela" x="34" y="500" text-anchor="start">facts</text>
+<path class="e ew" d="M20 780 H50"/>
+<text class="lg" x="60" y="784">one message</text>
+<path class="e ea" d="M170 780 H200"/>
+<text class="lg" x="210" y="784">memory and the next visit</text>
+<path class="e ef" d="M410 780 H440"/>
+<text class="lg" x="450" y="784">follow-ups, days later</text>
+<rect x="640" y="771" width="30" height="18" rx="3" fill="none" stroke="#7a8494" stroke-dasharray="4 3"/>
+<text class="lg" x="680" y="784">Jev is not asked</text>
+<text class="lg" x="1180" y="784" text-anchor="end">latest run: 0 wrong refunds in 57 conversations</text>
+<text class="lg" x="20" y="808">Jev judges language · code decides and owns every write · Sonnet words every reply</text>
+</svg>

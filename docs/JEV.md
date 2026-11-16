@@ -8,23 +8,9 @@ A support agent that works across days has many small language judgments to make
 Latest regression run (the sixth run, on the fixed code): 9 of 10 journeys passed all three runs, with 0 wrong refunds in 57 conversations and, as scored, 0 wrong-direction outcomes in 164 judged rows. The details, and the first-run results as they came, are below.
 
 ## How it fits
-```mermaid
-flowchart TD
-    M["Customer message"] --> F{"A follow-up is waiting<br/>for this customer?"}
-    F -- yes --> FJ["Jev: two questions<br/>arrived? not arrived?<br/>missions.read_reply"]
-    FJ --> FT["Code: follow-up truth table<br/>close, ask, escalate or no change<br/>judgments.decide_follow_up"]
-    FT --> S
-    F -- no --> S["Sonnet: procedures and tools<br/>agent.py"]
-    S --> G["Refund gate in code, no Jev<br/>gate.py"]
-    S --> REC["Recommend tool: Jev scores fit,<br/>code filters stock and owned books<br/>recommend.py"]
-    S --> R["Reply to the customer"]
-    R --> AR["After the reply, once an email is verified:<br/>one Jev call reads taste, special treatment and mood<br/>memory.remember"]
-    AR --> ST[("Store that outlives the conversation<br/>store.py, memory.py, contact.py, missions.py")]
-    CL["Clock: due follow-ups are sent; unanswered ones<br/>close or escalate after 14 days<br/>missions.run_due"] --> ST
-    V["Order verified on a later visit"] --> RC["Code: how the last contact ended, plus the mood<br/>priority hand-off, acknowledge or nothing<br/>contact.on_return"]
-    ST --> RC
-    RC --> S
-```
+![How the agent, Jev, code and the store fit together](jev-architecture.png)
+
+The numbers follow one message (1 to 7), the writes to the store (8, 9) and the days after (10 to 12). The source is [jev-architecture.svg](jev-architecture.svg).
 The intent router on Jev is a separate option (`BOOKLY_ROUTER=1`, `BOOKLY_ROUTER_ENGINE=jev`) and is not part of this flow.
 
 **One decision, end to end.** When a follow-up is waiting, Jev answers two yes/no questions about the customer's reply. Code reads them through this table (yes means 0.7 or more, and closing needs 0.85; no means 0.3 or less):
