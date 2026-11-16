@@ -2,6 +2,49 @@
 
 A learning build, made after the take-home was submitted. It lives on the branch `jev-memory` and is not merged into `main`. The submitted version is tagged `submitted-2026-10-22` and is unchanged. Everything here is off by default.
 
+## At a glance
+A support agent that works across days has many small language judgments to make: did the refund arrive, did the customer state a lasting taste, how did they leave. This build puts a decision model (Jev) beside the agent for those judgments. Jev answers typed questions with probabilities, code decides with truth tables and owns every write, and Sonnet still words every reply.
+
+Latest regression run (the sixth run, on the fixed code): 9 of 10 journeys passed all three runs, with 0 wrong refunds in 57 conversations and, as scored, 0 wrong-direction outcomes in 164 judged rows. The details, and the first-run results as they came, are below.
+
+## How it fits
+```mermaid
+flowchart TD
+    M["Customer message"] --> F{"A follow-up is waiting<br/>for this customer?"}
+    F -- yes --> FJ["Jev: two questions<br/>arrived? not arrived?<br/>missions.read_reply"]
+    FJ --> FT["Code: follow-up truth table<br/>close, ask, escalate or no change<br/>judgments.decide_follow_up"]
+    FT --> S
+    F -- no --> S["Sonnet: procedures and tools<br/>agent.py"]
+    S --> G["Refund gate in code, no Jev<br/>gate.py"]
+    S --> REC["Recommend tool: Jev scores fit,<br/>code filters stock and owned books<br/>recommend.py"]
+    S --> R["Reply to the customer"]
+    R --> AR["After the reply, once an email is verified:<br/>one Jev call reads taste, special treatment and mood<br/>memory.remember"]
+    AR --> ST[("Store that outlives the conversation<br/>store.py, memory.py, contact.py, missions.py")]
+    CL["Clock: due follow-ups are sent; unanswered ones<br/>close or escalate after 14 days<br/>missions.run_due"] --> ST
+    V["Order verified on a later visit"] --> RC["Code: how the last contact ended, plus the mood<br/>priority hand-off, acknowledge or nothing<br/>contact.on_return"]
+    ST --> RC
+    RC --> S
+```
+The intent router on Jev is a separate option (`BOOKLY_ROUTER=1`, `BOOKLY_ROUTER_ENGINE=jev`) and is not part of this flow.
+
+**One decision, end to end.** When a follow-up is waiting, Jev answers two yes/no questions about the customer's reply. Code reads them through this table (yes means 0.7 or more, and closing needs 0.85; no means 0.3 or less):
+
+| Arrived \ Not arrived | no | unsettled | yes |
+|---|---|---|---|
+| yes | close | ask | escalate |
+| unsettled | ask | ask | escalate |
+| no | no change | ask | escalate |
+
+A second "ask" escalates, so Bookly does not keep asking. A saved Jev answer scored 0.98 for "arrived" on a reply of just "yes", so a bare answer counts only when the agent's last reply asked the question.
+
+## Why a decision model for long-running work
+- **Many small judgments, over days.** Reading a follow-up reply is two questions, at about 90 ms and $0.00002. A long-running agent asks questions like these on almost every message.
+- **Speed and cost.** Against a small LLM (Haiku), Jev was 12 to 21 times faster and 2 to 8 times cheaper across the router and the judgments; on the judgments alone, 14 to 21 times faster and 4 to 8 times cheaper. On the judgments, accuracy was about even (94.5% against 93.9% in the sixth run; Haiku's misses come from one mapping artefact). On the router, Jev was less exact (87% against 95%).
+- **Typed answers are testable.** Each decision is a truth table with a row for the unsettled case, so 215 tests run with no model at all.
+- **Misses, as scored.** No engine made a harmful error as scored. Most of Jev's misses went to the careful side (unsettled, or "name the last contact once"). Two of its mood misses were settled answers that a screen would not catch.
+- **The limits.** Sonnet was a little more accurate (97.6% against 94.5%), and the gap rests on 2 to 3 items. A screen (Jev answers every message, and the unsettled cases go to a larger model or a person) fits these results, but this build does not test it. Every set is small, synthetic and labelled by me.
+- **Most of the work was ordinary code.** A store, an identity rule, dates and a state machine. The hard part was shared state, not the model.
+
 ## Why
 Support agents are starting to work across conversations: they follow up on a case weeks later, and they remember a returning customer. This build asks what a decision model adds to that idea, on the smallest example that is still honest.
 
