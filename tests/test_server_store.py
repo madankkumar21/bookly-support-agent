@@ -77,3 +77,17 @@ def test_tick_is_bounded_and_reset_clears_everything(client):
     fresh = client.post("/api/store/reset").json()
     assert fresh["store"]["today"] == "2026-10-10"
     assert client.post("/api/chat", json={"session_id": sid, "text": "hi"}).status_code == 404  # old conversations end
+
+
+def test_the_page_and_the_log_say_when_jev_has_no_key(client, monkeypatch, caplog):
+    """Store on, no TypeSafe key: the session says so, and the server logs what will not happen when it starts."""
+    assert client.post("/api/session").json()["jev_ready"] is False  # conftest removes the key
+    with caplog.at_level("WARNING", logger="bookly.web"):
+        server.show_startup_notes()
+    assert "Jev is never called" in caplog.text and "router" not in caplog.text  # the router is off here
+    monkeypatch.setenv("TYPESAFE_API_KEY", "ts_test")
+    assert client.post("/api/session").json()["jev_ready"] is True
+    assert config.startup_notes() == []
+    monkeypatch.setattr(config, "ROUTER_ENGINE", "jev")
+    monkeypatch.setattr(config, "ROUTER_ENABLED", False)
+    assert any("has no effect" in n for n in config.startup_notes())

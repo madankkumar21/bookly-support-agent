@@ -40,6 +40,26 @@ ROUTER_ENGINE = os.getenv("BOOKLY_ROUTER_ENGINE", "haiku")  # haiku | jev (bookl
 # Jev, TypeSafe's decision model, and the cross-session store. Both off by default (docs/JEV.md).
 # Jev answers typed yes/no questions with a probability; code decides what to do with the answers.
 STORE_ENABLED = os.getenv("BOOKLY_STORE", "0") == "1"  # customer memory, recommendations, follow-ups
+
+
+def jev_key_present() -> bool:
+    return bool(os.getenv("TYPESAFE_API_KEY", "").strip())
+
+
+def startup_notes() -> list[str]:
+    """Settings that run without an error and do less than the developer expects. The web server logs them when it starts."""
+    notes = []
+    if not jev_key_present():
+        if STORE_ENABLED:
+            notes.append("TYPESAFE_API_KEY is not set: Jev is never called. Tastes are not saved, typed follow-up "
+                         "answers are not read, and the last-contact mood stays unknown.")
+        if ROUTER_ENABLED and ROUTER_ENGINE == "jev":
+            notes.append("TYPESAFE_API_KEY is not set: the Jev router cannot answer, so every procedure loads.")
+    if ROUTER_ENGINE == "jev" and not ROUTER_ENABLED:
+        notes.append("BOOKLY_ROUTER_ENGINE=jev has no effect: the router is off. Set BOOKLY_ROUTER=1 as well.")
+    if ROUTER_ENGINE not in ("haiku", "jev"):
+        notes.append(f"BOOKLY_ROUTER_ENGINE={ROUTER_ENGINE!r} is not a known engine: the Haiku router is used.")
+    return notes
 JEV_MODEL = os.getenv("BOOKLY_JEV_MODEL", "jev-1.14.0")  # pinned: the bands in judgments.py were read against it
 JEV_BUDGET_USD = float(os.getenv("BOOKLY_JEV_BUDGET_USD", "2.00"))  # hard stop across every run on this machine
 JEV_USD_PER_MTOK_INPUT = 0.042  # output is free (docs.typesafe.ai/models, 2026-11-13)

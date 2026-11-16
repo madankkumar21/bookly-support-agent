@@ -73,6 +73,16 @@ class Mission:
         if self.status == "closed_resolved":
             return (f"Follow-up {self.mission_id}: the customer said {self.subject} arrived, and the system closed it. "
                     "If you have not yet, thank them in one sentence. Do not ask about it again.")
+        if self.status == "escalated" and not self.message_for_customer:
+            # The clock escalated it (nobody answered the follow-up email), so there is no message to relay.
+            return (f"Follow-up {self.mission_id}: the customer did not answer Bookly's email about {self.subject}, so "
+                    f"the system passed it to a person (ticket {self.ticket_id}). If you have not yet, tell the "
+                    "customer in one sentence that a person has the case and will reply by email. Do not ask about "
+                    "it again.")
+        if self.status == "closed_no_reply":
+            return (f"Follow-up {self.mission_id}: the customer did not answer Bookly's email about {self.subject}, and "
+                    "the system stopped waiting for one. Do not ask about it, and do not thank the customer for an answer. "
+                    "If the customer raises it, help as usual.")
         if self.status == "escalated":
             return (f"Follow-up {self.mission_id}: the customer said {self.subject} has not arrived, so the system "
                     f"passed it to a person (ticket {self.ticket_id}). If you have not yet, tell the customer "

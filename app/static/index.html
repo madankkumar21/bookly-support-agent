@@ -209,6 +209,7 @@ function renderStore(s) {
   const box = $("store"); box.hidden = false; box.innerHTML = "";
   $("storebar").hidden = false; $("today").textContent = `Today: ${s.today}`;
   box.appendChild(el("h2", null, "The store: what outlives a conversation"));
+  if (jevOff) box.appendChild(el("div", "rec", "Jev unavailable: judgments are skipped. No TYPESAFE_API_KEY was found, so tastes are not saved, typed follow-up answers are not read, and the mood stays unknown. Add the key to .env and restart the server."));
   box.appendChild(el("h3", null, "Customer memory (genre keys, never the customer’s words)"));
   const memory = Object.entries(s.memory);
   if (!memory.length) box.appendChild(el("div", "empty", "Nothing saved yet."));
@@ -226,6 +227,7 @@ function renderStore(s) {
 }
 
 let storeOn = false;
+let jevOff = false;  // store on, and the server has no TypeSafe key
 let lastTurn = 0;
 function renderTrace(events, latency) {
   const t = $("trace");
@@ -307,6 +309,7 @@ async function startConversation() {
   if (!r.ok) { addMsg(d.detail || "Could not start a session.", "bot"); return; }
   sessionId = d.session_id;
   storeOn = !!d.store;
+  jevOff = storeOn && d.jev_ready === false;
   addMsg("Hi! I'm Bookly's assistant. I can check on an order, help with a return or refund, or answer questions about shipping and our policies.", "bot");
   addChips(["My order is messed up", "Where is my order?", "Do you ship to Canada?", "I forgot my password"].concat(storeOn ? ["Recommend me a book"] : []), (o) => send(o));
   const help = el("details", "help");

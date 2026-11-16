@@ -38,6 +38,15 @@ agent_factory = Agent  # tests swap this for a scripted agent
 _store: Store | None = None  # BOOKLY_STORE=1 only: one store shared by every conversation on this server
 
 
+def show_startup_notes() -> None:
+    """Settings that run without an error and do less than the developer expects (bookly/config.py)."""
+    for note in config.startup_notes():
+        log.warning(note)
+
+
+app.router.on_startup.append(show_startup_notes)  # when the server starts, before the first request
+
+
 def get_store() -> Store | None:
     """The shared store, created on first use. None with the flag off: then nothing below changes."""
     global _store
@@ -94,7 +103,7 @@ def new_session() -> dict:
         _locks[agent.session.session_id] = threading.Lock()
     out = {"session_id": agent.session.session_id, "model": agent.model}
     if store:  # the page shows the store's panels and controls only when this is present
-        out.update(store=store.snapshot(), systems=store.backend.snapshot())
+        out.update(store=store.snapshot(), systems=store.backend.snapshot(), jev_ready=config.jev_key_present())
     return out
 
 

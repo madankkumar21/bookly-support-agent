@@ -229,3 +229,29 @@ def test_a_one_word_title_is_a_book_only_when_marked_or_when_recommending():
     assert recommender.unlisted_titles("You might like **Educated**.", set(), recommending=False) == ["Educated"]
     assert recommender.unlisted_titles("Try Dune, by Frank Herbert.", set(), recommending=False) == ["Dune"]
     assert recommender.unlisted_titles("Try Project Hail Mary.", set(), recommending=False) == ["Project Hail Mary"]
+
+
+# ---- Gaps found by the state-machine review (2026-11-16, docs/STATE_MACHINES.md) --------------------------
+
+def test_every_ending_has_words_for_the_model():
+    """A new ending must not raise inside get_order: WHAT has a phrase for every value in judgments.ENDED."""
+    from bookly.contact import WHAT
+
+    assert set(WHAT) == set(judgments.ENDED)
+
+
+def test_a_follow_up_the_clock_closed_or_escalated_has_an_instruction_without_none():
+    """Nobody answered the follow-up email. The agent's line names what happened and never relays 'None'."""
+    from bookly.missions import Mission
+
+    def mission(kind, status, ticket_id=None):
+        return Mission(mission_id="M-0001", kind=kind, order_id="BK-1013", email=NINA[1], first_name="Nina",
+                       subject="order BK-1013", origin={}, opened_on=date(2026, 10, 10), due_on=date(2026, 10, 13),
+                       status=status, ticket_id=ticket_id, sent_on=date(2026, 10, 13))
+
+    escalated = mission("lost_package_check", "escalated", "T-0002").next_step()
+    assert "None" not in escalated and "T-0002" in escalated and "a person has the case" in escalated
+    closed = mission("refund_check", "closed_no_reply").next_step()
+    assert "scheduled" not in closed and "stopped waiting" in closed and "Do not ask about it" in closed
+    for status in ("scheduled", "awaiting_reply", "closed_resolved", "closed_no_reply", "escalated"):
+        assert "None" not in mission("lost_package_check", status, "T-0002").next_step()

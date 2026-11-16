@@ -28,6 +28,13 @@ WHAT = {  # how the model is told the last contact ended; every word here is wri
     "refused": "a refund request that was not eligible",
     "quote_abandoned": "a refund offer that the customer did not confirm",
     "nothing_done": "no action recorded",
+    # The ticket and resolved endings never reach the two lines that use WHAT today (judgments.decide_return_contact
+    # sends them elsewhere). They are here so a change to that table cannot raise inside get_order.
+    "handoff_overdue": "a hand-off to a person that was not answered in time",
+    "handoff_pending": "a hand-off to a person that is still open",
+    "handoff_answered": "a hand-off that a person answered",
+    "handoff_followed_up": "a hand-off that Bookly is following up",
+    "resolved": "a request that was resolved",
 }
 
 

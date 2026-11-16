@@ -451,6 +451,9 @@ def test_lost_package_hand_off_opens_a_follow_up_that_escalates_when_unanswered(
     store.advance(config.FOLLOW_UP_EXPIRES_DAYS)
     assert m.status == "escalated" and store.backend.tickets[-1].reason_code == "followup_unresolved"
     assert store.backend.tickets[-1].payload["follow_ups"][0]["origin"] == {"ticket_id": "T-0001"}
+    # The clock escalated it, so there is no message to relay: the agent's line must not carry "None".
+    line = m.next_step()
+    assert m.message_for_customer is None and "None" not in line and m.ticket_id in line
 
 
 def test_a_second_hand_off_for_the_same_lost_package_takes_the_follow_up_with_it(tmp_path):
