@@ -23,7 +23,7 @@ You need Python 3.12+, [uv](https://docs.astral.sh/uv/) and an Anthropic API key
 ```bash
 cp .env.example .env          # then paste your key after ANTHROPIC_API_KEY=
 uv run uvicorn app.server:app --port 8000     # web chat with the trace panel: http://localhost:8000
-uv run pytest                 # 101 tests, no API key needed, about 2 seconds
+uv run pytest                 # 218 tests, no API key needed, about 2 seconds
 ```
 
 `uv run` installs the exact versions in `uv.lock`. The server binds to 127.0.0.1. Keep it that way, because every chat turn spends the key owner's API budget.
@@ -159,7 +159,15 @@ How I would run this as a POV for Bookly: exit criteria signed before the build,
 
 ## Experiment after the submission: Jev and a cross-session store (2026-11-13)
 
-A learning build on the branch `jev-memory`, not merged into `main`. Off by default, and with it off the prompt and the tool list are byte-identical to `main`. It adds a decision model (TypeSafe's Jev) beside the agent, and a store that outlives one conversation: customer memory, recommendations from past orders, and follow-ups that come back to a case days later. Jev judges language, code decides, and Sonnet still words every reply. The design, the truth tables, the expectations written before the first run, and the results are in [docs/JEV.md](docs/JEV.md). A two-minute summary, an architecture diagram and the case for a decision model are at the top of that file.
+An experiment on the branch `jev-memory`, not merged into `main`. Off by default, and with it off the prompt and the tool list are byte-identical to `main`. It adds a decision model (TypeSafe's Jev) beside the agent, and a store that outlives one conversation: customer memory, recommendations from past orders, follow-ups that come back to a case days later, and a record of how the last contact ended. Jev judges language, code decides, and Sonnet still words every reply.
+
+- **Start here:** [docs/JEV.md](docs/JEV.md). What the base agent does, what a long-running agent needs, how each decision was made, the results, and three cases to replay by hand.
+- **Every state machine, drawn:** [docs/STATE_MACHINES.md](docs/STATE_MACHINES.md).
+- **The run-by-run record:** [docs/JEV_LAB_LOG.md](docs/JEV_LAB_LOG.md).
+
+```bash
+BOOKLY_STORE=1 uv run uvicorn app.server:app --port 8000    # needs TYPESAFE_API_KEY in .env as well
+```
 
 ![Jev build architecture](docs/jev-architecture.png)
 
@@ -202,6 +210,14 @@ bookly/      agent.py (loop) · gate.py · state.py · tools.py · policy.py (en
 app/         server.py · static/index.html          web chat + trace panel
 cli.py       terminal chat with an inline trace; demo/ holds scripted conversations
 evals/       scenarios.yaml · simulator.py · checks.py · run_evals.py · rescore.py · results/
-tests/       101 tests: engine, gate, matcher, policy text, tools, loop (scripted model), rubric, web API
-docs/        BUILD_LOG.md · MODEL_COMPARISON.md · BOOKLY_EVALUATION_PLAN.md
+tests/       218 tests: engine, gate, matcher, policy text, tools, loop (scripted model), rubric, web API, and the Jev build
+docs/        BUILD_LOG.md · MODEL_COMPARISON.md · BOOKLY_EVALUATION_PLAN.md · ROUTER.md
+
+On this branch only (the Jev experiment, off by default):
+bookly/      jev.py (client, log, budget) · judgments.py (every question and truth table) · jev_router.py
+             store.py · memory.py · missions.py (follow-ups) · contact.py (last contact) · recommend.py
+             prompts/recommendations.md · followups.md · last_contact.md
+evals/       judgment_set.yaml · judgment_eval.py · llm_judge.py · journeys.yaml · run_journeys.py
+docs/        JEV.md (start here) · STATE_MACHINES.md · JEV_LAB_LOG.md
+AGENTS.md    the map, the commands and the rules, for a person or a coding agent
 ```

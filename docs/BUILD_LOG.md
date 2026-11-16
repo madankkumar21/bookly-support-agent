@@ -82,7 +82,7 @@ The review asked how intent detection works today and at about fifty intents, an
 
 ## Jev and the cross-session store (2026-11-13, learning build)
 
-Built after the submission, on the branch `jev-memory`. Not part of the submission. Full write-up: [JEV.md](JEV.md).
+Built after the submission, on the branch `jev-memory`. Not part of the submission. Full write-up: [JEV.md](JEV.md). Run-by-run record: [JEV_LAB_LOG.md](JEV_LAB_LOG.md).
 
 **Decisions I made**
 - The question: what does a decision model add to an agent that follows up on a conversation from weeks ago?
