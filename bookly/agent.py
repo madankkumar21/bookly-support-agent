@@ -113,7 +113,7 @@ class TurnResult:
     handoff: dict | None
     events: list[dict]
     usage: dict
-    notes: list[str] = field(default_factory=list)  # grey system notes written by code (BOOKLY_RESHIP=1 only)
+    notes: list[dict] = field(default_factory=list)  # system notes written by code, {kind, label, text} (BOOKLY_RESHIP=1 only)
 
 
 @dataclass

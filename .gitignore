@@ -7,3 +7,8 @@ __pycache__/
 evals/results/_scratch/
 .claude/
 logs/
+# computer-use run outputs: raw recordings and per-run JSON stay local
+docs/media/*.webm
+docs/media/cu_*.mp4
+evals/results/cu_ticket_agent/
+evals/results/cu_journey/

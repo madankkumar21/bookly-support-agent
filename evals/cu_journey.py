@@ -12,7 +12,8 @@ What one run does. Code types every customer line (scripted free text) and click
 4. Between chat turns (a chat turn holds the store lock), the computer-use agent works the request in the order
    console (/admin). It sees only screenshots and acts only with the mouse and keyboard.
 5. The customer sends one more line, and the chat relays the confirmation that code wrote. The console's
-   priority reship opened one reship_followup staff ticket, and code shows a grey note after the confirmation.
+   priority reship opened one reship_followup staff ticket with a code-built handoff summary, and code shows a
+   "Handed to staff" note after the confirmation.
 
 Code checks the store after each beat (moods, decisions, follow-ups, the reship) and counts the console's POSTs.
 Caps: 25 computer actions per run; the shared computer-use spend cap (BOOKLY_CU_BUDGET_USD, default $3.00);
@@ -140,12 +141,15 @@ def watches(snap: dict) -> list:
     return [m for m in snap["store"]["follow_ups"] if m["kind"] == "delay_watch"]
 
 
+HOLD_S = 3  # the combined video holds its last frame this long, so the handoff card and note can be read
+
+
 def combine(chat_video, console_video, t_cu0: float, t_cu1: float, chat0: float, console0: float, dest) -> bool:
     """One continuous timeline: chat until computer use starts, the console while it runs, then the chat."""
     a, b0, b1, c = t_cu0 - chat0, t_cu0 - console0, t_cu1 - console0, t_cu1 - chat0
     graph = (f"[0:v]split[x][y];[x]trim=0:{a:.2f},setpts=PTS-STARTPTS[p];"
              f"[1:v]trim={b0:.2f}:{b1:.2f},setpts=PTS-STARTPTS[q];[y]trim=start={c:.2f},setpts=PTS-STARTPTS[r];"
-             "[p][q][r]concat=n=3:v=1[out]")
+             f"[p][q][r]concat=n=3:v=1,tpad=stop_mode=clone:stop_duration={HOLD_S}[out]")
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(chat_video), "-i", str(console_video),
            "-filter_complex", graph, "-map", "[out]", "-c:v", "libx264", "-crf", "30", "-preset", "veryfast",
            "-pix_fmt", "yuv420p", str(dest)]
@@ -260,6 +264,13 @@ def one_run(client, pw, base: str, n: int, headed: bool) -> dict:
               and len(s["systems"]["tickets"]) == 1 and rs and follow[0]["payload"].get("reship_id") == rs[0]["reship_id"]
               and rs[0].get("ticket_id") == follow[0]["ticket_id"],
               "code opened exactly one priority reship_followup ticket for the reship, and no other ticket")
+        handoff = follow[0]["payload"].get("handoff") if follow else None
+        want_handoff = {"header": f"{ORDER} · Riley Morgan · Priority follow-up",
+                        "contacts": ["10/10 — 2 days late", "10/13 — still missing; declined a person",
+                                     "10/17 — lost (no scan since 10/9)"],
+                        "done": f"Reship {rs[0]['reship_id'] if rs else '?'} issued in the order console on 10/17.",
+                        "next": "Confirm the replacement shipped, then check in with the customer."}
+        check(out, "console", handoff == want_handoff, f"the ticket carries the code-built handoff summary (got {handoff})")
 
         # ---- back to the chat: the confirmation code wrote ----
         page.bring_to_front()
@@ -270,10 +281,13 @@ def one_run(client, pw, base: str, n: int, headed: bool) -> dict:
         out["visit_3"]["confirmation_reply"], out["visit_3"]["notes"] = reply, notes
         check(out, "confirmation", rs and rs[0]["reship_id"] in reply and "October 10" in reply and "October 13" in reply,
               "the chat relayed the reship id and the code-written citation of both earlier visits")
-        want = f"Escalated to staff · priority follow-up · ticket {follow[0]['ticket_id']} · reship {rs[0]['reship_id']}" \
+        want = {"kind": "handoff", "label": "Handed to staff",
+                "text": f"Priority follow-up · ticket {follow[0]['ticket_id']} · reship {rs[0]['reship_id']}"} \
             if follow and rs else None
         check(out, "confirmation", want is not None and notes == [want],
-              f"code showed one grey escalation note after the confirmation (got {notes})")
+              f"code showed one 'Handed to staff' note after the confirmation (got {notes})")
+        # Final screen: the handoff card in view in the systems panel, the note at the bottom of the chat.
+        page.evaluate("document.querySelector('#systems .handoff')?.scrollIntoView({block: 'nearest'})")
         page.wait_for_timeout(3000)
         out["passed"] = not out["reasons"]
         return out

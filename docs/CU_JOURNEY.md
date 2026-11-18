@@ -13,7 +13,7 @@ The [first computer-use demo](CU_TICKET_AGENT.md) only typed a staff reply. Here
 
 ## The rules this demo keeps
 
-- **Delay facts decide entitlement. Mood changes only the handling.** A calm customer with the same order gets the same reship. An angry ending adds a priority flag, so a person follows up by email. When the console completes a priority reship, code opens a staff ticket for that follow-up, and the chat shows a grey system note. The agent never tells the customer how they sounded, and the ticket and the note do not name the mood.
+- **Delay facts decide entitlement. Mood changes only the handling.** A calm customer with the same order gets the same reship. An angry ending adds a priority flag, so a person follows up by email. When the console completes a priority reship, code opens a staff ticket for that follow-up, with a handoff summary built from stored facts, and the chat shows a "Handed to staff" note. The agent never tells the customer how they sounded, and the ticket, the summary and the note do not name the mood.
 - **Code gates the action, not the model.** The chat agent has no reship tool. Code writes a `reship_request` only after four checks pass. The order console accepts a reship only for an order that has a pending request from code.
 - **Everything is behind `BOOKLY_RESHIP=1`.** It also needs `BOOKLY_STORE=1`. With the flag off, the prompts, the tools, the backend snapshot and every existing test are unchanged, and `/admin` returns 404.
 
@@ -54,7 +54,7 @@ The plan's decline line was "No. I don't want to talk to anyone, I just want my 
 | `app/static/index.html` | Shows reship requests, reships and the code's reship decisions in the existing panels. |
 | `evals/cu_journey.py` | Drives the three visits with Playwright, runs computer use between chat turns, checks the store after each beat and records the videos. |
 | `evals/cu_ticket_agent.py` | `cu_loop` and `run_action` now take a system prompt and a screenshot function. Their defaults are the old ones. Also fixes `post()`: a `noqa` comment had swallowed its `data` and `method` arguments. |
-| `tests/test_reship.py` | 14 tests: `delay_watch`, the whole journey with a scripted model and Jev, the staff ticket and chat note for a priority reship (and none without the flag), the console gate (no request, repeat, over the cap, wrong reason), the chat gate over the cap, the hand-off guard, and flag-off behavior. |
+| `tests/test_reship.py` | 17 tests: `delay_watch`, the whole journey with a scripted model and Jev, the staff ticket, its handoff summary and the chat note for a priority reship (and none without the flag), the console gate (no request, repeat, over the cap, wrong reason), the chat gate over the cap, the hand-off guard, and flag-off behavior. |
 
 ### The checks after each run
 
@@ -67,6 +67,7 @@ Code reads the store through `POST /api/session`, which returns a snapshot and c
 - **Visit 3.** There is one pending `reship_request`, for BK-1020. The priority flag is set. There is no lost-package ticket.
 - **Console.** There is exactly one reship, on BK-1020. The server saw exactly one console POST, and the console page sent exactly one. The agent ended with DONE.
 - **Confirmation.** The chat reply has the reship id and both cited dates.
+- **Handoff (run 4 on).** The `reship_followup` ticket carries the exact handoff summary below, and the chat shows one "Handed to staff" note.
 
 ## How to run it
 
@@ -117,6 +118,25 @@ With `BOOKLY_RESHIP` off, nothing changes: the chat response has no `notes` key.
 **Result: 1 counted run, passed.** Every check passed, including the two new ones. Computer use took 15 actions and 7 model requests, for $0.098. Jev cost $0.0006. The run took 63 seconds. One earlier attempt on the same code failed in visit 1 and is not counted: the chat model offered a person at once and opened a ticket. That beat does not use the new code. The new ticket and note were correct in that attempt too. It cost $0.131 in computer use.
 
 The repo does not keep the run 3 video. It was built the same way as the run 1 and run 2 videos.
+
+## Run 4 (2026-11-18): a self-contained handoff for staff
+
+Run 3 made the escalation visible, but the ticket row and the note looked like every other row and note. Now:
+
+- **A handoff summary on the ticket.** `Backend.reship` stores `payload.handoff` on the priority `reship_followup` ticket. Code builds it from stored records only, with no model text. The per-visit facts come from the `delay_watch` follow-ups, the prior contact record and the order. Code writes them on the reship request in `reship.contact_facts`. "Declined a person" needs two stored facts: code offered a person on that day (a new `person_offered` note in the follow-up history), and that visit opened no hand-off ticket. The summary never names the mood or a Jev score. In run 4 it read:
+
+  > **BK-1020 · Riley Morgan · Priority follow-up**
+  > Contacts: 10/10 — 2 days late · 10/13 — still missing; declined a person · 10/17 — lost (no scan since 10/9)
+  > Done: Reship RS-1020-01 issued in the order console on 10/17.
+  > Next: Confirm the replacement shipped, then check in with the customer.
+
+- **A distinct card and note.** The systems panel draws this ticket as a "HANDOFF TO STAFF" card: an amber left border, a light amber background, a bold header, then Contacts, Done and Next, with the staff reply box under it. The chat note uses the same accent and reads "↪ Handed to staff · Priority follow-up · ticket T-0001 · reship RS-1020-01". The colors are tokens (`--handoff`, `--handoff-bg`, `--handoff-ink`) with light and dark values. Other tickets and notes keep their old look. The `notes` items in the chat response are now objects (`kind`, `label`, `text`).
+
+With `BOOKLY_RESHIP` off, nothing changes. A reship without the priority flag still opens no ticket, so there is no card and no note.
+
+**Result: 1 run, 1 attempt, passed.** Every check passed, including the new handoff check. Computer use took 15 actions and 7 model requests, for $0.130. Jev cost $0.0006. The run took 62 seconds.
+
+Video: [`docs/media/journey.mp4`](media/journey.mp4) (0.9 MB, 64 s). It is the combined video of run 4. The repo does not keep the raw WebM recordings or the result JSON. The combined video now holds its last frame for 3 more seconds (`tpad` in `combine`), and the harness scrolls the handoff card into view before the end, so the card and the note can be read.
 
 ## Limits, stated plainly
 

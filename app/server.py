@@ -247,7 +247,7 @@ def chat(body: ChatIn) -> dict:
         "handoff": t.handoff,
         "events": [_public_event(e) for e in t.events if e["kind"] not in ("customer", "agent")],
         "latency_ms": t.usage["latency_ms"],
-        **({"notes": t.notes} if t.notes else {}),  # grey system notes written by code (BOOKLY_RESHIP=1 only)
+        **({"notes": t.notes} if t.notes else {}),  # system notes written by code (BOOKLY_RESHIP=1 only)
         "systems": agent.backend.snapshot(),
         **({"store": agent.store.snapshot()} if agent.store else {}),
     }

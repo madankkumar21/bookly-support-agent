@@ -10,8 +10,9 @@ One late package, three visits. Who decides what:
   tool. The order console (/admin) acts only on a pending request that code wrote.
 - Mood changes handling only: if the customer's last visit ended angry, code sets the priority flag on the
   request, so a person follows up by email. When the console completes a priority reship, code opens a
-  reship_followup ticket for staff (Backend.reship), and the chat shows a grey system note after the agent's
-  confirmation (escalation_notes). Neither names the mood.
+  reship_followup ticket for staff (Backend.reship) with a handoff summary built from stored facts
+  (contact_facts), and the chat shows a "Handed to staff" note after the agent's confirmation
+  (escalation_notes). Neither names the mood.
 
 A late package gets a delay_watch follow-up, so the next visit has a question to read the answer against.
 """
@@ -76,6 +77,8 @@ def apply_delay_watch_reply(store, session, toolbox, mission, outcome: str) -> s
     if not _likely_lost(order, b.today, policy):
         when = lost_on(order, policy)
         mission.status = "closed_still_missing"
+        if toolbox.return_contact and toolbox.return_contact.get("outcome") == "early_escalation":
+            mission.note(b.today, "person_offered")  # a fact for the staff handoff: code offered a person this visit
         mission.agent_note = (
             f"the customer says {mission.subject} has still not arrived. The system checked the tracking: the "
             f"package is late, but it is not yet treated as lost. Bookly treats a package as lost when tracking has "
@@ -121,7 +124,7 @@ def request_reship(store, session, toolbox, order) -> dict:
     priority = bool(prior and prior.mood == "angry")
     cites = sorted({m.opened_on.isoformat() for m in store.missions.items
                     if m.order_id == order.order_id and m.kind == "delay_watch"})
-    req = b.add_reship_request(order.order_id, REASON, priority, cites)
+    req = b.add_reship_request(order.order_id, REASON, priority, cites, contact_facts(store, order, prior))
     session.log("reship", order_id=order.order_id, checks=checks, request_id=req.request_id, priority=priority,
                 decision=f"reship request {req.request_id} written by code"
                          + ("; priority flag set (last visit ended angry): a person follows up by email" if priority else ""))
@@ -132,6 +135,31 @@ def request_reship(store, session, toolbox, order) -> dict:
     message = store.kb.message("reship_requested", order_id=order.order_id,
                                last_scan=_human(order.last_scan_at or order.eta), title=order.items[0].title)
     return {"status": "requested", "request_id": req.request_id, "priority": priority, "message_for_customer": message}
+
+
+def _md(d: date) -> str:
+    return f"{d.month}/{d.day}"
+
+
+def contact_facts(store, order, prior) -> list[dict]:
+    """One code-known fact per visit about this order, oldest first, for the staff handoff. From the stored
+    delay_watch follow-ups, the prior contact record and the order. Never the mood or a Jev score."""
+    b, by_day = store.backend, {}
+    watches = sorted((m for m in store.missions.items if m.order_id == order.order_id and m.kind == "delay_watch"),
+                     key=lambda m: m.opened_on)
+    for m in watches:
+        offered = {h["on"] for h in m.history if h["event"] == "person_offered"}
+        for h in m.history:
+            if h["event"] == "reply_read:still_missing":
+                declined = h["on"] in offered and prior is not None and prior.on == h["on"] and not prior.ticket_id
+                by_day[h["on"]] = "still missing" + ("; declined a person" if declined else "")
+    for m in watches:  # the first visit: the order was already late
+        day = m.opened_on.isoformat()
+        if day not in by_day and order.eta:
+            by_day[day] = f"{(m.opened_on - order.eta).days} days late"
+    scan = order.last_scan_at or order.eta
+    by_day[b.today.isoformat()] = f"lost (no scan since {_md(scan)})" if scan else "lost"
+    return [{"on": d, "fact": by_day[d]} for d in sorted(by_day)]
 
 
 def visits_line(cites: list[str]) -> str:
@@ -169,15 +197,16 @@ def facts(toolbox) -> list[str]:
     return lines
 
 
-def escalation_notes(toolbox, reply: str) -> list[str]:
-    """Grey system notes for the chat, written by code: one per priority reship, shown once, on the turn whose
-    reply relays the confirmation (it names the reship id). They say a person was brought in, never why."""
+def escalation_notes(toolbox, reply: str) -> list[dict]:
+    """System notes for the chat, written by code: one per priority reship, shown once, on the turn whose
+    reply relays the confirmation (it names the reship id). They say a person was brought in, never why.
+    kind "handoff" tells the page to draw the note in the handoff accent instead of the plain grey style."""
     notes = []
     for rs in toolbox.b.reships:
         if (rs.ticket_id and rs.order_id in toolbox.s.verified_orders and rs.reship_id in reply
                 and rs.reship_id not in toolbox.escalation_noted):
             toolbox.escalation_noted.add(rs.reship_id)
-            note = f"Escalated to staff · priority follow-up · ticket {rs.ticket_id} · reship {rs.reship_id}"
-            toolbox.s.log("reship", order_id=rs.order_id, decision=f"note shown in the chat: {note}")
-            notes.append(note)
+            text = f"Priority follow-up · ticket {rs.ticket_id} · reship {rs.reship_id}"
+            toolbox.s.log("reship", order_id=rs.order_id, decision=f"note shown in the chat: Handed to staff · {text}")
+            notes.append({"kind": "handoff", "label": "Handed to staff", "text": text})
     return notes

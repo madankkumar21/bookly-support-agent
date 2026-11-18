@@ -78,12 +78,26 @@ def test_full_journey_writes_one_priority_request_and_the_console_reships_once(t
     assert any("check in with you by email" in f for f in facts)
 
 
-def test_a_priority_reship_opens_one_staff_ticket_and_one_chat_note(tmp_path, reship_on):
+def two_angry_visits(tmp_path):
+    """Visits 1 and 2 of the journey, then the clock to 10/17 (lost). Visit 2 offers a person; no ticket."""
     store = journey_store(tmp_path)
     visit(store, [f"Where is {RILEY[0]}? {RILEY[1]}", "This is ridiculous. I'm done waiting on you people."])
     store.advance(3)
     visit(store, [f"It's still not here. {RILEY[0]}, {RILEY[1]}", "No. I don't want to talk to anyone."])
     store.advance(4)
+    return store
+
+
+HANDOFF = {"header": "BK-1020 · Riley Morgan · Priority follow-up",
+           "contacts": ["10/10 — 2 days late", "10/13 — still missing; declined a person",
+                        "10/17 — lost (no scan since 10/9)"],
+           "done": "Reship RS-1020-01 issued in the order console on 10/17.",
+           "next": "Confirm the replacement shipped, then check in with the customer."}
+MOOD_WORDS = ("angry", "mood", "frustrat")
+
+
+def test_a_priority_reship_opens_one_staff_ticket_and_one_chat_note(tmp_path, reship_on):
+    store = two_angry_visits(tmp_path)
     b = store.backend
     confirm = lambda m: resp(text(f"Your replacement is on its way (reship {b.reships[0].reship_id})."))  # noqa: E731
     agent = session(store, [lambda m: resp(tool("get_order", order_id=RILEY[0], email=RILEY[1])),
@@ -97,14 +111,67 @@ def test_a_priority_reship_opens_one_staff_ticket_and_one_chat_note(tmp_path, re
     assert ticket.reason_code == "reship_followup" and ticket.payload["priority"] is True
     assert ticket.payload["reship_id"] == rs.reship_id and ticket.payload["request_id"] == rs.request_id
     assert ticket.payload["earlier_contacts"] == ["2026-10-10", "2026-10-13"]
-    assert "angry" not in str(ticket.payload) and "mood" not in str(ticket.payload)
+    assert not any(w in str(ticket.payload).lower() for w in MOOD_WORDS)
 
     done = agent.handle("Okay. Has it actually been sent?")
-    assert done.notes == [f"Escalated to staff · priority follow-up · ticket {ticket.ticket_id} · reship {rs.reship_id}"]
-    assert "angry" not in done.notes[0] and "mood" not in done.notes[0]
+    assert done.notes == [{"kind": "handoff", "label": "Handed to staff",
+                           "text": f"Priority follow-up · ticket {ticket.ticket_id} · reship {rs.reship_id}"}]
+    assert not any(w in str(done.notes).lower() for w in MOOD_WORDS)
     assert agent.handle("Thanks.").notes == []  # shown once
     assert len(b.tickets) == 1
     assert next(m for m in store.missions.items if m.status == "closed_reship_requested").ticket_id == ticket.ticket_id
+
+
+def test_the_handoff_summary_is_built_from_stored_facts(tmp_path, reship_on):
+    store = two_angry_visits(tmp_path)
+    b = store.backend
+    session(store, [lambda m: resp(tool("get_order", order_id=RILEY[0], email=RILEY[1])),
+                    lambda m: resp(text("Okay."))]).handle(f"Still nothing has arrived. {RILEY[0]}, {RILEY[1]}")
+    [req] = b.reship_requests  # the per-visit facts are on the request code wrote, before any reship
+    assert req.contacts == [{"on": "2026-10-10", "fact": "2 days late"},
+                            {"on": "2026-10-13", "fact": "still missing; declined a person"},
+                            {"on": "2026-10-17", "fact": "lost (no scan since 10/9)"}]
+    offered = [h for m in store.missions.items for h in m.history if h["event"] == "person_offered"]
+    assert [h["on"] for h in offered] == ["2026-10-13"]  # the store fact behind "declined a person"
+    b.reship(RILEY[0], "lost_in_transit", store.policy.approval_cap)
+    [ticket] = b.tickets
+    assert ticket.payload["handoff"] == HANDOFF
+    assert not any(w in str(ticket.payload["handoff"]).lower() for w in MOOD_WORDS)
+    assert "jev" not in str(ticket.payload).lower() and "score" not in str(ticket.payload).lower()
+
+
+def test_a_visit_that_opened_a_ticket_is_not_called_declined(tmp_path, reship_on):
+    store = two_angry_visits(tmp_path)
+    prior = store.contacts.by_email[RILEY[1]]
+    prior.ticket_id = "T-9999"  # visit 2 brought a person in: the fact must not say "declined"
+    from bookly import reship as reships
+
+    facts = reships.contact_facts(store, store.backend.orders[RILEY[0]], prior)
+    assert facts[1] == {"on": "2026-10-13", "fact": "still missing"}
+
+
+def test_the_api_returns_the_handoff_summary_and_the_handoff_note(tmp_path, reship_on, monkeypatch):
+    import app.server as server
+    from tests.test_agent_loop import ScriptedClient
+
+    store = two_angry_visits(tmp_path)
+    session(store, [lambda m: resp(tool("get_order", order_id=RILEY[0], email=RILEY[1])),
+                    lambda m: resp(text("Okay."))]).handle(f"Still nothing has arrived. {RILEY[0]}, {RILEY[1]}")
+    steps = [lambda m: resp(tool("get_order", order_id=RILEY[0], email=RILEY[1])),
+             lambda m: resp(text("Your replacement is on its way (reship RS-1020-01)."))]
+    monkeypatch.setattr(server, "agent_factory", lambda **kw: server.Agent(client=ScriptedClient(steps), **kw))
+    server._store = store
+    try:
+        c = TestClient(server.app, base_url="http://localhost")
+        assert c.post("/admin/api/reship", json={"order_id": RILEY[0], "reason_code": "lost_in_transit"}).status_code == 200
+        sid = c.post("/api/session").json()["session_id"]
+        d = c.post("/api/chat", json={"session_id": sid, "text": f"Has it been sent? {RILEY[0]}, {RILEY[1]}"}).json()
+        [ticket] = d["systems"]["tickets"]
+        assert ticket["reason_code"] == "reship_followup" and ticket["payload"]["handoff"] == HANDOFF
+        assert d["notes"] == [{"kind": "handoff", "label": "Handed to staff",
+                               "text": "Priority follow-up · ticket T-0001 · reship RS-1020-01"}]
+    finally:
+        server._store = None
 
 
 def test_a_non_priority_reship_opens_no_ticket_and_no_note(tmp_path, reship_on):

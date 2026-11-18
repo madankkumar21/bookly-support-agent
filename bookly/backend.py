@@ -82,6 +82,7 @@ class ReshipRequest:
     cites: list[str]  # ISO dates of the customer's earlier contacts about this order (from follow-up records)
     status: str = "pending"  # pending | done
     reship_id: str | None = None
+    contacts: list[dict] = field(default_factory=list)  # {"on": ISO date, "fact": code-known fact} per visit, oldest first
 
 
 @dataclass
@@ -227,14 +228,15 @@ class Backend:
     def reship_history(self, order_id: str) -> list:
         return [r for r in self.reship_requests if r.order_id == order_id] + [r for r in self.reships if r.order_id == order_id]
 
-    def add_reship_request(self, order_id: str, reason_code: str, priority: bool, cites: list[str]) -> ReshipRequest:
+    def add_reship_request(self, order_id: str, reason_code: str, priority: bool, cites: list[str],
+                           contacts: list[dict] | None = None) -> ReshipRequest:
         """Called only by bookly/reship.py, after its checks. One request per order, ever."""
         with self._lock:
             if self.reship_history(order_id):
                 raise ValueError(f"{order_id} already has a reship request or a reship")
             req = ReshipRequest(request_id=f"RR-{len(self.reship_requests) + 1:04d}", order_id=order_id,
                                 reason_code=reason_code, requested_on=self.today.isoformat(), priority=priority,
-                                cites=list(cites))
+                                cites=list(cites), contacts=[dict(c) for c in contacts or []])
             self.reship_requests.append(req)
             return req
 
@@ -279,7 +281,20 @@ class Backend:
             "summary": (f"Priority follow-up: reship {rs.reship_id} for {rs.order_id} was sent on {rs.done_on} "
                         f"(request {req.request_id}). Earlier contacts about this order: {earlier}. "
                         "Check in with the customer by email."),
+            "handoff": self._handoff_summary(rs, req),
         })
+
+    def _handoff_summary(self, rs: Reship, req: ReshipRequest) -> dict:
+        """What staff read first on a priority reship_followup ticket. Built by code from stored records only:
+        the order, the per-visit facts on the request, and the reship. No model text and no mood."""
+        md = lambda iso: f"{date.fromisoformat(iso).month}/{date.fromisoformat(iso).day}"  # noqa: E731
+        name = self.orders[rs.order_id].customer_name if rs.order_id in self.orders else "customer"
+        return {
+            "header": f"{rs.order_id} · {name} · Priority follow-up",
+            "contacts": [f"{md(c['on'])} — {c['fact']}" for c in req.contacts],
+            "done": f"Reship {rs.reship_id} issued in the order console on {md(rs.done_on)}.",
+            "next": "Confirm the replacement shipped, then check in with the customer.",
+        }
 
     def snapshot(self) -> dict:
         """End state used by the eval checks."""
