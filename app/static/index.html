@@ -71,13 +71,14 @@
   .systems h3 { font-size: 12px; margin: 8px 0 2px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
   .note { align-self: center; color: var(--muted); font-size: 13px; text-align: center; padding: 4px 10px; border: 1px dashed var(--line); border-radius: 8px; }
   /* Staff handoff (BOOKLY_RESHIP=1, priority reship only): one accent for the ticket card and the chat note. */
-  .systems div.handoff { margin: 6px 0; padding: 8px 10px; border: 1px solid var(--line); border-left: 4px solid var(--handoff); border-radius: 6px; background: var(--handoff-bg); }
+  .systems div.rec.handoff { margin: 6px 0; padding: 8px 10px; border: 1px solid var(--line); border-left: 4px solid var(--handoff); border-radius: 6px; background: var(--handoff-bg); scroll-margin: 12px; }
   .handoff .tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--handoff-ink); margin-bottom: 2px; }
   .handoff .hd { font-weight: 700; } .handoff .meta { color: var(--muted); font-size: 12px; }
   .handoff .lbl { font-weight: 600; color: var(--handoff-ink); margin-top: 4px; } .handoff ul { margin: 0; padding-left: 18px; }
   .note.handoff { color: var(--ink); background: var(--handoff-bg); border: 1px solid var(--handoff); border-left-width: 4px; }
   .note.handoff b { color: var(--handoff-ink); }
   .systems { border-top: 1px solid var(--line); padding: 10px 14px; font-size: 13px; max-height: 32%; overflow-y: auto; }
+  .systems:has(div.handoff) { max-height: 48%; }  /* room for the whole handoff card, down to its Staff replied button */
   .systems h2 { font-size: 13px; margin: 0 0 6px; } .systems .empty { color: var(--muted); }
   .systems div.rec { padding: 3px 0; border-bottom: 1px dashed var(--line); }
   .systems textarea.staff-reply { display: block; width: 100%; margin-top: 6px; height: 54px; resize: vertical; border: 1px solid var(--muted); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 13px; background: var(--bg); color: var(--ink); }

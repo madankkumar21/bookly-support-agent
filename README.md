@@ -16,6 +16,57 @@ Report and every transcript: [evals/results/2026-10-13-sonnet-k5-v2/](evals/resu
 
 ---
 
+## Long-horizon journey: Jev + computer use
+
+[![One customer, three visits: the chat, the order console and the staff handoff card](docs/media/journey.gif)](docs/media/journey.mp4)
+
+*Click the preview for the full video (MP4, 64 s). The last frame is also saved as [docs/media/journey-final.png](docs/media/journey-final.png).*
+
+**What you're watching.** One customer has one late package. The customer contacts Bookly three times over a week. The video shows all three visits in about 60 seconds.
+
+**The idea in one line.** Jev judges, code decides, computer use acts, code verifies.
+
+### Why I built it this way
+
+- **Memory across visits.** A real support case does not end in one chat. The store keeps the follow-ups and how each visit ended. The next visit starts from those facts, so the customer does not have to repeat the story.
+- **Jev reads, but it never decides.** Jev is TypeSafe's decision model. It reads two things in the customer's words: whether the package arrived, and the mood. Code turns those readings into actions.
+- **Delay facts decide what the customer gets.** The order dates and the tracking scans decide when a package counts as lost and when a reship is allowed.
+- **Mood only changes the handling.** An angry customer gets a person sooner, but not a better outcome. A calm customer with the same order gets the same reship. The agent never says "you were angry".
+- **The chat agent cannot reship.** It has no reship tool. Code writes the reship request after its checks pass.
+- **The console accepts only approved requests.** I built the order console to look like an old internal tool, with a search page, an Actions menu and a confirmation pop-up. A computer-use agent clicks through it. It sees only screenshots and uses only the mouse and keyboard.
+- **Code checks the result.** The backend records the reship, and the test harness reads the store to confirm that exactly one reship exists. For a priority reship, code hands the case to staff with a summary of facts from the stored records. The summary has no model text and no mood.
+
+### The three visits
+
+| Visit | Situation | What Jev read | What code decided |
+|---|---|---|---|
+| 1 (Sat 10/10) | The package is 2 days late. The customer ends the chat upset. | Mood: angry | Late, not lost. Code opens a follow-up and stores the angry ending. |
+| 2 (Tue 10/13) | The package is still missing. The customer declines a person and leaves. | Not arrived. Mood: angry | The last visit ended angry, so the agent offers a person early. The package is not lost yet, so code schedules another check. |
+| 3 (Sat 10/17) | No tracking scan for a week. | Not arrived | The package is lost, so code writes a reship request with a priority flag. Computer use completes the reship in the console. Code confirms it and opens a staff handoff card. |
+
+### Honest limits
+
+- The customer's lines are scripted. Code types them.
+- The clock is a button. Code clicks **+1 day** to move the date.
+- The order console is a simulated page that I built for this demo. It is not a real legacy system.
+- Four counted runs passed. Two earlier attempts failed and are not counted; [docs/CU_JOURNEY.md](docs/CU_JOURNEY.md) says why. That shows the path works. It is not a reliability rate.
+- The chat agent's replies can change between runs. The confirmation text does not change, because code writes it.
+
+### How to run it
+
+```bash
+BOOKLY_STORE=1 BOOKLY_RESHIP=1 uv run uvicorn app.server:app --port 8021
+# in a second terminal:
+uv run playwright install chromium       # once
+uv run python -m evals.cu_journey --base-url http://localhost:8021 --runs 1
+```
+
+Put `ANTHROPIC_API_KEY` and `TYPESAFE_API_KEY` in `.env`. With `BOOKLY_RESHIP` off, the app behaves as before and `/admin` returns 404.
+
+More detail: [docs/CU_JOURNEY.md](docs/CU_JOURNEY.md) (the journey, the checks and the results), [docs/JEV.md](docs/JEV.md) (Jev and the store) and [docs/CU_TICKET_AGENT.md](docs/CU_TICKET_AGENT.md) (the first computer-use demo).
+
+---
+
 ## Run it (3 commands)
 
 You need Python 3.12+, [uv](https://docs.astral.sh/uv/) and an Anthropic API key.
