@@ -20,7 +20,7 @@ Report and every transcript: [evals/results/2026-10-13-sonnet-k5-v2/](evals/resu
 
 [![One customer, three visits: the chat, the order console and the staff handoff card](docs/media/journey.gif)](docs/media/journey.mp4)
 
-*Preview above. Full video: [docs/media/journey.mp4](docs/media/journey.mp4) (64 s). The last frame is also saved as [docs/media/journey-final.png](docs/media/journey-final.png).*
+*Preview above. Full video: [download journey.mp4](https://github.com/madankkumar21/bookly-support-agent/raw/long-horizon-bookly/docs/media/journey.mp4) (64 s; GitHub does not play MP4 files inline). The last frame is also saved as [docs/media/journey-final.png](docs/media/journey-final.png).*
 
 **What you're watching.** One customer has one late package. The customer contacts Bookly three times over a week. The video shows all three visits in about 60 seconds.
 
