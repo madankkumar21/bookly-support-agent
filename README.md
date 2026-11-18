@@ -18,7 +18,8 @@ Report and every transcript: [evals/results/2026-10-13-sonnet-k5-v2/](evals/resu
 
 ## Long-horizon journey: Jev + computer use
 
-https://github.com/user-attachments/assets/0a5f7e46-867d-4402-b0af-ec0987bdfcff
+https://github.com/user-attachments/assets/d72ec46e-4aaa-4be2-b575-7c7bb7f4601c
+
 
 *Full video above (77 s, with four title cards). The last frame is also saved as [docs/media/journey-final.png](docs/media/journey-final.png). A [GIF version](docs/media/journey.gif) and the [MP4 file](docs/media/journey.mp4) are in `docs/media/`.*
 
