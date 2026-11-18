@@ -1,6 +1,6 @@
 # One customer, three visits, and a computer-use rep in the order console
 
-**Result: 2 runs, 2 passed.** Each run took about 62 seconds. Computer use cost $0.13 in run 1 and $0.09 in run 2.
+**Result: 4 counted runs, 4 passed.** Runs 1 and 2 are below. Runs 3 and 4 came after later changes. Each run took about 62 seconds. Computer use cost $0.09 to $0.13 per run.
 
 This demo follows one customer with one late package across three chat visits. Each part of the system has a visible job:
 
@@ -37,9 +37,9 @@ The confirmation in both runs, written by code from the reship record and the fo
 
 > Your replacement copy of The Hobbit is on its way (reship RS-1020-01). You first told us about this on Saturday, October 10, and again on Tuesday, October 13. A member of our team will also check in with you by email.
 
-### One change to the plan's wording
+### One change to the first script's wording
 
-The plan's decline line was "No. I don't want to talk to anyone, I just want my book." Jev read it as concerned, not angry, on two calls: P(angry) was 0.16 and 0.17. The mood bar is 0.6, and it did not change. So in the one smoke run, the stored mood dropped to "concerned", and the priority beat failed. The scripted line now ends "my damn book". Jev reads that at P(angry) 0.96. The smoke run is not counted in the results.
+The first script's decline line was "No. I don't want to talk to anyone, I just want my book." Jev read it as concerned, not angry, on two calls: P(angry) was 0.16 and 0.17. The mood bar is 0.6, and it did not change. So in the one smoke run, the stored mood dropped to "concerned", and the priority beat failed. The scripted line now ends "my damn book". Jev reads that at P(angry) 0.96. The smoke run is not counted in the results.
 
 ## What was built
 
@@ -140,11 +140,11 @@ Video: [`docs/media/journey.mp4`](media/journey.mp4) (0.9 MB, 64 s). It is the c
 
 ## Limits, stated plainly
 
-- **The customer's wording is scripted.** Code types fixed lines. One line was changed from the plan so that Jev reads it as angry, as described above. A model-played customer was not tried.
+- **The customer's wording is scripted.** Code types fixed lines. One line was changed from the first script so that Jev reads it as angry, as described above. A model-played customer was not tried.
 - **The clock is a button.** Code clicks **+1 day**. Nothing in the demo runs on its own schedule.
 - **Code writes the citation of the earlier visits.** The dates come from the follow-up records. The chat model only relays the sentence.
 - **The console is a simulated page made for the demo.** It is not a real legacy system. It has no login, it runs on the same local server, and a banner on the page says that it is simulated.
 - **The chat agent has no reship tool.** The console accepts a reship only when code approved it first. Computer use does the clicks. It does not decide entitlement.
 - **Code times the computer use.** The harness starts computer use between chat turns, because a chat turn holds the store lock. The system does not start it on its own.
-- **Two runs on one script.** That shows that the path works. It is not a reliability rate.
+- **Four counted runs on one scripted journey.** That shows that the path works. It is not a reliability rate.
 - **The task was easy to see.** One request was in the queue, and every control was on the first screen.

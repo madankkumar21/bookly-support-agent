@@ -49,7 +49,7 @@ VISIT_1 = [f"Where is my order {ORDER}? It was due on the 8th. My email is {EMAI
            "This is ridiculous. I'm done waiting on you people."]
 VISIT_2 = [f"It's still not here and nothing has changed on the tracking. Order {ORDER}, {EMAIL}.",
            "No. I don't want to talk to anyone, I just want my damn book."]
-# The plan's line had no "damn". Jev read it as concerned (P(angry) 0.16-0.17, below the 0.6 bar) on two calls, so the
+# The first script's line had no "damn". Jev read it as concerned (P(angry) 0.16-0.17, below the 0.6 bar) on two calls, so the
 # mood beat could not fire. One word of strong language puts it at 0.96. Mood rules and thresholds are unchanged.
 VISIT_3 = [f"Still nothing has arrived, and the tracking hasn't moved in a week. Order {ORDER}, {EMAIL}."]
 AFTER_CONSOLE = "Okay. Has it actually been sent?"

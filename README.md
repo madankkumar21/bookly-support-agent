@@ -20,7 +20,7 @@ Report and every transcript: [evals/results/2026-10-13-sonnet-k5-v2/](evals/resu
 
 [![One customer, three visits: the chat, the order console and the staff handoff card](docs/media/journey.gif)](docs/media/journey.mp4)
 
-*Click the preview for the full video (MP4, 64 s). The last frame is also saved as [docs/media/journey-final.png](docs/media/journey-final.png).*
+*Preview above. Full video: [docs/media/journey.mp4](docs/media/journey.mp4) (64 s). The last frame is also saved as [docs/media/journey-final.png](docs/media/journey-final.png).*
 
 **What you're watching.** One customer has one late package. The customer contacts Bookly three times over a week. The video shows all three visits in about 60 seconds.
 
@@ -35,7 +35,7 @@ Report and every transcript: [evals/results/2026-10-13-sonnet-k5-v2/](evals/resu
 - **Mood only changes the handling.** An angry customer gets a person sooner, but not a better outcome. A calm customer with the same order gets the same reship. The agent never says "you were angry".
 - **The chat agent cannot reship.** It has no reship tool. Code writes the reship request after its checks pass.
 - **The console accepts only approved requests.** I built the order console to look like an old internal tool, with a search page, an Actions menu and a confirmation pop-up. A computer-use agent clicks through it. It sees only screenshots and uses only the mouse and keyboard.
-- **Computer use closes the loop.** Most support agents stop at a ticket and a promise, and a person does the fix later in an internal tool. Many of those tools have no API the agent can call. Here the agent finishes the job itself: it works the order console the way a rep would, from screenshots, with the mouse and keyboard. In the counted runs, the reship took about 15 actions, about a minute and 9 to 13 cents of computer use. The customer hears "your replacement is on the way", not "someone will get back to you".
+- **Computer use closes the loop.** Many support agents stop at a ticket, and a person does the fix later in an internal tool. Many of those tools have no API the agent can call. Here a computer-use agent does that step. It works the order console the way a rep would, from screenshots, with the mouse and keyboard. In the counted runs, the console step took about 15 actions and 9 to 13 cents of computer use. The whole three-visit journey took about a minute. The customer hears "your replacement is on the way", not "someone will get back to you".
 - **Code checks the result.** The backend records the reship, and the test harness reads the store to confirm that exactly one reship exists. For a priority reship, code hands the case to staff with a summary of facts from the stored records. The summary has no model text and no mood.
 
 ### The three visits
@@ -51,7 +51,8 @@ Report and every transcript: [evals/results/2026-10-13-sonnet-k5-v2/](evals/resu
 - The customer's lines are scripted. Code types them.
 - The clock is a button. Code clicks **+1 day** to move the date.
 - The order console is a simulated page that I built for this demo. It is not a real legacy system.
-- Four counted runs passed. Two earlier attempts failed and are not counted; [docs/CU_JOURNEY.md](docs/CU_JOURNEY.md) says why. That shows the path works. It is not a reliability rate.
+- The test harness starts the computer-use step between chat turns. The system does not start it on its own.
+- Four counted runs passed. Two earlier attempts failed and are not counted. In one, Jev read the decline line as concerned, not angry, so the line was reworded. In the other, the chat model offered a person at once in visit 1. Details are in [docs/CU_JOURNEY.md](docs/CU_JOURNEY.md). This shows the path works. It is not a reliability rate.
 - The chat agent's replies can change between runs. The confirmation text does not change, because code writes it.
 
 ### How to run it
