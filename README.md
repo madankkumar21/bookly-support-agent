@@ -74,7 +74,7 @@ You need Python 3.12+, [uv](https://docs.astral.sh/uv/) and an Anthropic API key
 ```bash
 cp .env.example .env          # then paste your key after ANTHROPIC_API_KEY=
 uv run uvicorn app.server:app --port 8000     # web chat with the trace panel: http://localhost:8000
-uv run pytest                 # 218 tests, no API key needed, about 2 seconds
+uv run pytest                 # 236 tests, no API key needed, about 2 seconds
 ```
 
 `uv run` installs the exact versions in `uv.lock`. The server binds to 127.0.0.1. Keep it that way, because every chat turn spends the key owner's API budget.
@@ -262,7 +262,7 @@ bookly/      agent.py (loop) · gate.py · state.py · tools.py · policy.py (en
 app/         server.py · static/index.html          web chat + trace panel
 cli.py       terminal chat with an inline trace; demo/ holds scripted conversations
 evals/       scenarios.yaml · simulator.py · checks.py · run_evals.py · rescore.py · results/
-tests/       218 tests: engine, gate, matcher, policy text, tools, loop (scripted model), rubric, web API, and the Jev build
+tests/       236 tests: engine, gate, matcher, policy text, tools, loop (scripted model), rubric, web API, and the Jev build
 docs/        BUILD_LOG.md · MODEL_COMPARISON.md · BOOKLY_EVALUATION_PLAN.md · ROUTER.md
 
 On this branch only (the Jev experiment, off by default):
