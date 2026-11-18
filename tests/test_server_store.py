@@ -91,3 +91,17 @@ def test_the_page_and_the_log_say_when_jev_has_no_key(client, monkeypatch, caplo
     monkeypatch.setattr(config, "ROUTER_ENGINE", "jev")
     monkeypatch.setattr(config, "ROUTER_ENABLED", False)
     assert any("has no effect" in n for n in config.startup_notes())
+
+
+def test_a_staff_reply_with_text_is_stored_on_the_ticket_and_the_one_click_reply_still_works(client):
+    store = server.get_store()
+    first = store.backend.create_ticket("lost_package", {"identity": "verified"})
+    second = store.backend.create_ticket("lost_package", {"identity": "verified"})
+    out = client.post("/api/ticket/answer", json={"ticket_id": first.ticket_id, "reply": "  Sorry, a replacement ships today.  "}).json()
+    by_id = {t["ticket_id"]: t for t in out["systems"]["tickets"]}
+    assert by_id[first.ticket_id]["answered_on"] == "2026-10-10"
+    assert by_id[first.ticket_id]["staff_reply"] == "Sorry, a replacement ships today."
+    out = client.post("/api/ticket/answer", json={"ticket_id": second.ticket_id}).json()
+    by_id = {t["ticket_id"]: t for t in out["systems"]["tickets"]}
+    assert by_id[second.ticket_id]["answered_on"] == "2026-10-10" and by_id[second.ticket_id]["staff_reply"] is None
+    assert client.post("/api/ticket/answer", json={"ticket_id": "T-9999", "reply": "x"}).status_code == 404

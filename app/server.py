@@ -65,6 +65,7 @@ class TickIn(BaseModel):
 
 class TicketIn(BaseModel):
     ticket_id: str = Field(max_length=16)
+    reply: str = Field("", max_length=2000)  # optional text the person wrote; empty keeps the old one-click reply
 
 
 class ChatIn(BaseModel):
@@ -129,6 +130,8 @@ def answer_ticket(body: TicketIn) -> dict:
         if ticket is None:
             raise HTTPException(404, "unknown ticket")
         ticket.answered_on = ticket.answered_on or store.backend.today.isoformat()
+        if body.reply.strip() and not ticket.staff_reply:
+            ticket.staff_reply = body.reply.strip()
     return {"store": store.snapshot(), "systems": store.backend.snapshot()}
 
 

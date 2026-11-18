@@ -67,6 +67,7 @@ class Ticket:
     opened_on: str | None = None  # ISO dates, so the snapshot stays plain JSON
     answered_on: str | None = None  # set when a person replies (the demo's "Staff replied" button)
     escalated_to: str | None = None  # a later priority ticket that took this one over (bookly/contact.py)
+    staff_reply: str | None = None  # what the person wrote, when the staff panel sent text with the reply
 
 
 class ItemAlreadyReturned(Exception):

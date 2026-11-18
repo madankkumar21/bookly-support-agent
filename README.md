@@ -164,6 +164,7 @@ An experiment on the branch `jev-memory`, not merged into `main`. Off by default
 - **Start here:** [docs/JEV.md](docs/JEV.md). What the base agent does, what a long-running agent needs, how each decision was made, the results, and three cases to replay by hand.
 - **Every state machine, drawn:** [docs/STATE_MACHINES.md](docs/STATE_MACHINES.md).
 - **The run-by-run record:** [docs/JEV_LAB_LOG.md](docs/JEV_LAB_LOG.md).
+- **A computer-use support rep:** [docs/CU_TICKET_AGENT.md](docs/CU_TICKET_AGENT.md). Claude answers ticket T-0001 through the screen only.
 
 ```bash
 BOOKLY_STORE=1 uv run uvicorn app.server:app --port 8000    # needs TYPESAFE_API_KEY in .env as well
