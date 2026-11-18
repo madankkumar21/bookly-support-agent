@@ -17,6 +17,8 @@ Report and every transcript: [evals/results/2026-10-13-sonnet-k5-v2/](evals/resu
 ---
 
 ## Long-horizon journey: Jev + computer use
+https://github.com/user-attachments/assets/0a5f7e46-867d-4402-b0af-ec0987bdfcff
+
 
 [![One customer, three visits: the chat, the order console and the staff handoff card](docs/media/journey.gif)](docs/media/journey.mp4)
 
