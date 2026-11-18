@@ -100,7 +100,7 @@ def log_spend(run_id: str, usage, model: str) -> float:
 # ---------- the app, through its existing endpoints ----------
 
 def post(base: str, path: str, body: dict | None = None) -> dict:
-    req = urllib.request.Request(base + path,  # noqa: S310 (local dev server only) data=json.dumps(body or {}).encode(), method="POST",
+    req = urllib.request.Request(base + path, data=json.dumps(body or {}).encode(), method="POST",  # noqa: S310 (local dev server only)
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=30) as r:  # noqa: S310 (local dev server only)
         return json.loads(r.read())
@@ -144,15 +144,16 @@ def key_combo(text: str) -> str:
     return "+".join(KEYS.get(part.strip().lower(), part.strip()) for part in text.split("+"))
 
 
-def run_action(page, name: str, inp: dict) -> list | str:
+def run_action(page, name: str, inp: dict, shot=None) -> list | str:
     """Execute one computer member at the same pixel coordinates. Returns tool_result content."""
+    shot = shot or screenshot_b64
     x, y = (inp.get("coordinate") or [None, None])[:2]
     mods = [key_combo(m) for m in (inp.get("text") or "").split("+") if m] if name.endswith("click") or name == "scroll" else []
     for m in mods:
         page.keyboard.down(m)
     try:
         if name == "screenshot":
-            return [{"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": screenshot_b64(page)}}]
+            return [{"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": shot(page)}}]
         if name == "zoom":
             x0, y0, x1, y1 = inp["region"]
             img = page.screenshot(type="png", clip={"x": x0, "y": y0, "width": max(1, x1 - x0), "height": max(1, y1 - y0)})
@@ -201,12 +202,14 @@ def run_action(page, name: str, inp: dict) -> list | str:
 
 # ---------- the computer-use loop ----------
 
-def cu_loop(client, page, run_id: str, log: list) -> dict:
+def cu_loop(client, page, run_id: str, log: list, system: str = SYSTEM,
+            first_text: str = "Here is the screen now. Work the open ticket.", shot=None) -> dict:
+    shot = shot or screenshot_b64
     tools = [{"type": "computer_toolset_20260801",
               "configs": {"hold_key": {"enabled": False}, "cursor_position": {"enabled": False}}}]
     messages = [{"role": "user", "content": [
-        {"type": "text", "text": "Here is the screen now. Work the open ticket."},
-        {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": screenshot_b64(page)}},
+        {"type": "text", "text": first_text},
+        {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": shot(page)}},
     ]}]
     actions, usd, final_text, stop = 0, 0.0, "", "max_actions"
     while True:
@@ -214,7 +217,7 @@ def cu_loop(client, page, run_id: str, log: list) -> dict:
             stop = "budget"
             break
         response = client.beta.messages.create(
-            model=MODEL, max_tokens=8000, system=SYSTEM, tools=tools, messages=messages,
+            model=MODEL, max_tokens=8000, system=system, tools=tools, messages=messages,
             thinking={"type": "adaptive"}, output_config={"effort": EFFORT},
             cache_control={"type": "ephemeral"},  # each request re-sends every earlier screenshot: read them from cache
             betas=["server-side-fallback-2026-07-01"], fallbacks="default",
@@ -240,7 +243,7 @@ def cu_loop(client, page, run_id: str, log: list) -> dict:
             actions += 1
             entry = {"n": actions, "action": b.name, "input": {k: v for k, v in b.input.items()}}
             try:
-                content = run_action(page, b.name, b.input)
+                content = run_action(page, b.name, b.input, shot)
                 results.append({"type": "tool_result", "tool_use_id": b.id, "toolset_name": "computer", "content": content})
             except Exception as exc:  # report it to the model, stop the rest of this batch
                 failed = True

@@ -14,6 +14,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from bookly import config
 from bookly.config import ORDERS_PATH, TODAY
 
 
@@ -70,6 +71,31 @@ class Ticket:
     staff_reply: str | None = None  # what the person wrote, when the staff panel sent text with the reply
 
 
+@dataclass
+class ReshipRequest:
+    """Written only by code (bookly/reship.py) after its checks pass. The order console acts on it."""
+    request_id: str
+    order_id: str
+    reason_code: str  # lost_in_transit
+    requested_on: str
+    priority: bool  # the customer's last visit ended angry: a person follows up by email
+    cites: list[str]  # ISO dates of the customer's earlier contacts about this order (from follow-up records)
+    status: str = "pending"  # pending | done
+    reship_id: str | None = None
+
+
+@dataclass
+class Reship:
+    reship_id: str
+    order_id: str
+    request_id: str
+    reason_code: str
+    done_on: str
+    priority: bool
+    via: str = "order_console"
+    ticket_id: str | None = None  # priority only: the staff follow-up ticket code opened with the reship
+
+
 class ItemAlreadyReturned(Exception):
     """A second return for a book that already has one. The gate refuses this first; this is the last line of
     defence when two conversations share one backend (bookly/store.py) and act at the same moment."""
@@ -94,6 +120,9 @@ class Backend:
     password_resets: list[str] = field(default_factory=list)
     tickets: list[Ticket] = field(default_factory=list)
     today: date = TODAY
+    reship_requests: list[ReshipRequest] = field(default_factory=list)  # BOOKLY_RESHIP=1 only
+    reships: list[Reship] = field(default_factory=list)
+    console_posts: list[dict] = field(default_factory=list)  # every reship POST the console sent, accepted or not
     _lock: Any = field(default_factory=threading.Lock, repr=False, compare=False)
 
     @classmethod
@@ -191,10 +220,75 @@ class Backend:
         self.tickets.append(ticket)
         return ticket
 
+    # ---- reships (BOOKLY_RESHIP=1) ---------------------------------------------------------
+    def order_total(self, order_id: str) -> float:
+        return round(sum(i.price for i in self.orders[order_id].items), 2)
+
+    def reship_history(self, order_id: str) -> list:
+        return [r for r in self.reship_requests if r.order_id == order_id] + [r for r in self.reships if r.order_id == order_id]
+
+    def add_reship_request(self, order_id: str, reason_code: str, priority: bool, cites: list[str]) -> ReshipRequest:
+        """Called only by bookly/reship.py, after its checks. One request per order, ever."""
+        with self._lock:
+            if self.reship_history(order_id):
+                raise ValueError(f"{order_id} already has a reship request or a reship")
+            req = ReshipRequest(request_id=f"RR-{len(self.reship_requests) + 1:04d}", order_id=order_id,
+                                reason_code=reason_code, requested_on=self.today.isoformat(), priority=priority,
+                                cites=list(cites))
+            self.reship_requests.append(req)
+            return req
+
+    def reship(self, order_id: str, reason_code: str, cap: float) -> dict:
+        """The order console's Reship action. It acts only on a request that code wrote first.
+
+        Rejects: an order with no pending request, a second reship of the same order, an order over the cap,
+        and a reason code that differs from the request's. Every call is recorded in console_posts."""
+        with self._lock:
+            canonical = normalize_order_id(order_id) or str(order_id)
+            pending = next((r for r in self.reship_requests if r.order_id == canonical and r.status == "pending"), None)
+            if any(r.order_id == canonical for r in self.reships):
+                result = {"status": "rejected", "reason": "already_reshipped"}
+            elif pending is None:
+                result = {"status": "rejected", "reason": "no_pending_request"}
+            elif canonical not in self.orders or self.order_total(canonical) > cap:
+                result = {"status": "rejected", "reason": "over_value_cap"}
+            elif reason_code != pending.reason_code:
+                result = {"status": "rejected", "reason": "reason_code_mismatch", "expected": pending.reason_code}
+            else:
+                digits = canonical.split("-")[-1]
+                rs = Reship(reship_id=f"RS-{digits}-{len(self.reships) + 1:02d}", order_id=canonical,
+                            request_id=pending.request_id, reason_code=reason_code, done_on=self.today.isoformat(),
+                            priority=pending.priority)
+                self.reships.append(rs)
+                pending.status, pending.reship_id = "done", rs.reship_id
+                if rs.priority:  # code, not the model: a person follows up on a priority reship
+                    rs.ticket_id = self._reship_followup_ticket(rs, pending).ticket_id
+                result = {"status": "reshipped", "reship_id": rs.reship_id, "priority": rs.priority,
+                          **({"ticket_id": rs.ticket_id} if rs.ticket_id else {})}
+            self.console_posts.append({"order_id": canonical, "reason_code": reason_code, "on": self.today.isoformat(),
+                                       **result})
+            return result
+
+    def _reship_followup_ticket(self, rs: Reship, req: ReshipRequest) -> Ticket:
+        """The staff ticket for a priority reship. Called inside reship(), under the lock."""
+        earlier = ", ".join(req.cites) or "none on file"
+        return self.create_ticket("reship_followup", {
+            "reason_code": "reship_followup", "priority": True, "identity": f"opened by code with reship {rs.reship_id}",
+            "order_id": rs.order_id, "reship_id": rs.reship_id, "request_id": req.request_id,
+            "earlier_contacts": list(req.cites),
+            "summary": (f"Priority follow-up: reship {rs.reship_id} for {rs.order_id} was sent on {rs.done_on} "
+                        f"(request {req.request_id}). Earlier contacts about this order: {earlier}. "
+                        "Check in with the customer by email."),
+        })
+
     def snapshot(self) -> dict:
         """End state used by the eval checks."""
-        return {
+        out = {
             "returns": [asdict(r) for r in self.ledger],
             "password_resets": list(self.password_resets),
             "tickets": [asdict(t) for t in self.tickets],
         }
+        if config.RESHIP_ENABLED:  # with the flag off the snapshot keeps its old shape
+            out.update(reship_requests=[asdict(r) for r in self.reship_requests],
+                       reships=[asdict(r) for r in self.reships], console_posts=[dict(p) for p in self.console_posts])
+        return out

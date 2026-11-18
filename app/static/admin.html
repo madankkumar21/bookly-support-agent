@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BOOKLY OMS - Order Management</title>
+<!-- Simulated for the demo (docs/CU_JOURNEY.md): a deliberately old-style staff console. Not a real system. -->
+<style>
+  body { margin: 0; background: #c0c0c0; font: 12px Verdana, Tahoma, sans-serif; color: #000; }
+  #top { background: #000080; color: #fff; padding: 6px 10px; font-weight: bold; font-size: 14px; }
+  #top span { float: right; font-weight: normal; font-size: 11px; }
+  #sim { background: #ffffcc; border-bottom: 1px solid #808080; padding: 3px 10px; font-size: 11px; }
+  #wrap { display: flex; }
+  #nav { width: 170px; background: #d4d0c8; border-right: 2px solid #808080; min-height: 760px; padding: 8px; }
+  #nav a { display: block; color: #0000ee; text-decoration: underline; margin: 6px 0; cursor: pointer; }
+  #nav .grey { color: #808080; text-decoration: none; cursor: default; }
+  #main { flex: 1; padding: 12px 16px; }
+  h1 { font-size: 15px; margin: 0 0 10px; border-bottom: 1px solid #808080; padding-bottom: 4px; }
+  h2 { font-size: 13px; margin: 16px 0 6px; }
+  table { border-collapse: collapse; background: #fff; }
+  td, th { border: 1px solid #808080; padding: 3px 8px; text-align: left; }
+  th { background: #d4d0c8; }
+  .box { background: #fff; border: 2px inset #d4d0c8; padding: 10px; margin: 8px 0; max-width: 760px; }
+  input[type=text] { font: 12px Verdana; border: 2px inset #d4d0c8; padding: 2px 4px; width: 160px; }
+  button { font: 12px Verdana; background: #d4d0c8; border: 2px outset #fff; padding: 2px 12px; cursor: pointer; }
+  button:active { border-style: inset; }
+  .pri { color: #c00000; font-weight: bold; }
+  .err { color: #c00000; font-weight: bold; margin: 8px 0; }
+  .ok { color: #006400; font-weight: bold; margin: 8px 0; }
+  .menuwrap { position: relative; display: inline-block; }
+  #menu { position: absolute; top: 22px; left: 0; background: #fff; border: 1px solid #000; box-shadow: 2px 2px 0 #808080; z-index: 5; min-width: 200px; }
+  #menu div { padding: 4px 10px; cursor: pointer; }
+  #menu div:hover { background: #000080; color: #fff; }
+  #modalbg { position: fixed; inset: 0; background: rgba(0,0,0,.25); display: none; align-items: center; justify-content: center; }
+  #modal { background: #d4d0c8; border: 2px outset #fff; width: 380px; }
+  #modal .t { background: #000080; color: #fff; padding: 3px 6px; font-weight: bold; }
+  #modal .b { padding: 14px; }
+  #modal .btns { text-align: right; padding: 0 14px 12px; }
+  .reasons label { display: block; margin: 3px 0; }
+</style>
+</head>
+<body>
+<div id="top">BOOKLY ORDER MANAGEMENT SYSTEM v3.2 <span>User: SUPPORT_AGENT_07 &nbsp;|&nbsp; Business date: <b id="bizdate">-</b></span></div>
+<div id="sim">Simulated staff console for a demo. Not a real system.</div>
+<div id="wrap">
+  <div id="nav">
+    <b>MAIN MENU</b>
+    <a id="nav-home">Home / Work Queue</a>
+    <a id="nav-search">Order Search</a>
+    <span class="grey">Customer Lookup</span>
+    <span class="grey">Reports</span>
+    <span class="grey">Inventory</span>
+    <span class="grey">Admin Settings</span>
+  </div>
+  <div id="main"></div>
+</div>
+<div id="modalbg"><div id="modal"><div class="t">Confirm Action</div><div class="b" id="modaltext"></div>
+  <div class="btns"><button id="ok">OK</button> <button id="cancel">Cancel</button></div></div></div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const REASONS = ["damaged_in_transit", "lost_in_transit", "wrong_address", "customer_request"];
+let current = null, chosen = null;
+
+async function home() {
+  const d = await (await fetch("/admin/api/queue")).json();
+  $("bizdate").textContent = d.today;
+  const rows = d.requests.map((r) => `<tr><td>${esc(r.request_id)}</td><td>${esc(r.order_id)}</td><td>RESHIP</td><td>${esc(r.reason_code)}</td><td>${esc(r.requested_on)}</td><td>${r.priority ? '<span class="pri">PRIORITY</span>' : "normal"}</td><td>${esc(r.status.toUpperCase())}</td></tr>`).join("");
+  $("main").innerHTML = `<h1>Home / Work Queue</h1>
+    <div class="box">Requests raised by the chat system. To work one, open the order with Order Search and use the Actions menu.</div>
+    <table><tr><th>Request</th><th>Order</th><th>Type</th><th>Reason</th><th>Raised</th><th>Priority</th><th>Status</th></tr>
+    ${rows || '<tr><td colspan="7">No open requests.</td></tr>'}</table>`;
+}
+
+function search(prefill) {
+  $("main").innerHTML = `<h1>Order Search</h1><div class="box">Order number: <input type="text" id="q" value="${esc(prefill || "")}"> <button id="go">Search</button>
+    <div id="res"></div></div>`;
+  $("go").onclick = () => openOrder($("q").value);
+  $("q").addEventListener("keydown", (e) => { if (e.key === "Enter") openOrder($("q").value); });
+}
+
+async function openOrder(id) {
+  const r = await fetch("/admin/api/order/" + encodeURIComponent(id.trim()));
+  if (!r.ok) { $("res").innerHTML = `<div class="err">ERR-404: ORDER NOT FOUND</div>`; return; }
+  current = await r.json(); chosen = null;
+  renderOrder();
+}
+
+function renderOrder(note) {
+  const o = current;
+  const items = o.items.map((i) => `<tr><td>${esc(i.item_id)}</td><td>${esc(i.title)}</td><td>${esc(i.format)}</td><td>$${i.price.toFixed(2)}</td></tr>`).join("");
+  const hist = o.history.map((h) => `<tr><td>${esc(h.kind)}</td><td>${esc(h.request_id || "")}</td><td>${esc(h.reship_id || "")}</td><td>${esc(h.reason_code)}</td><td>${esc(h.status || "DONE")}</td><td>${h.priority ? '<span class="pri">PRIORITY</span>' : ""}</td></tr>`).join("");
+  $("main").innerHTML = `<h1>Order ${esc(o.order_id)}</h1>
+    <table>
+      <tr><th>Customer</th><td>${esc(o.customer_name)} (${esc(o.email)})</td><th>Status</th><td>${esc(o.status.toUpperCase())}</td></tr>
+      <tr><th>Placed</th><td>${esc(o.placed_at)}</td><th>Shipped</th><td>${esc(o.shipped_at || "-")}</td></tr>
+      <tr><th>Carrier</th><td>${esc(o.carrier || "-")} ${esc(o.tracking_number || "")}</td><th>ETA</th><td>${esc(o.eta || "-")}</td></tr>
+      <tr><th>Last scan</th><td>${esc(o.last_scan_at || "-")}</td><th>Order total</th><td>$${o.total.toFixed(2)}</td></tr>
+    </table>
+    <h2>Items</h2><table><tr><th>Item</th><th>Title</th><th>Format</th><th>Price</th></tr>${items}</table>
+    <h2>Reship history</h2><table><tr><th>Record</th><th>Request</th><th>Reship</th><th>Reason</th><th>Status</th><th></th></tr>${hist || '<tr><td colspan="6">None.</td></tr>'}</table>
+    <h2>Order actions</h2>
+    <div class="box">
+      <div class="menuwrap"><button id="actions">Actions &#9660;</button><div id="menu" hidden>
+        <div data-a="note">Add Note</div><div data-a="resend">Resend Confirmation</div><div data-a="reship">Reship Order</div>
+        <div data-a="credit">Issue Store Credit</div><div data-a="cancel">Cancel Order</div></div></div>
+      <div id="form"></div>
+      ${note || ""}
+    </div>`;
+  $("actions").onclick = () => { $("menu").hidden = !$("menu").hidden; };
+  document.querySelectorAll("#menu [data-a]").forEach((d) => d.onclick = () => { $("menu").hidden = true; pick(d.dataset.a, d.textContent); });
+}
+
+function pick(action, label) {
+  if (action !== "reship") { $("form").innerHTML = `<div class="err">ERR-403: ${esc(label.toUpperCase())} IS NOT PERMITTED FOR THIS USER.</div>`; return; }
+  $("form").innerHTML = `<h2>Reship Order ${esc(current.order_id)}</h2>
+    <div>Reason code (required):</div>
+    <div class="reasons">${REASONS.map((r) => `<label><input type="radio" name="reason" value="${r}"> ${r}</label>`).join("")}</div>
+    <button id="submit">Submit Reship</button> <span id="formerr" class="err"></span>`;
+  $("submit").onclick = () => {
+    const r = document.querySelector('input[name="reason"]:checked');
+    if (!r) { $("formerr").textContent = "ERR-001: SELECT A REASON CODE"; return; }
+    chosen = r.value;
+    $("modaltext").innerHTML = `Reship order <b>${esc(current.order_id)}</b> with reason code <b>${esc(chosen)}</b>?<br><br>This creates a replacement shipment at no charge.`;
+    $("modalbg").style.display = "flex";
+  };
+}
+
+$("cancel").onclick = () => { $("modalbg").style.display = "none"; };
+$("ok").onclick = async () => {
+  $("modalbg").style.display = "none";
+  const res = await fetch("/admin/api/reship", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_id: current.order_id, reason_code: chosen }) });
+  const d = await res.json();
+  const r = await fetch("/admin/api/order/" + encodeURIComponent(current.order_id));
+  current = await r.json();
+  renderOrder(res.ok ? `<div class="ok">RESHIP CREATED: ${esc(d.reship_id)}${d.priority ? " (PRIORITY: customer follow-up required)" : ""}</div>`
+                     : `<div class="err">REJECTED: ${esc((d.detail && d.detail.reason) || "error").toUpperCase()}</div>`);
+};
+$("nav-home").onclick = home;
+$("nav-search").onclick = () => search();
+home();
+</script>
+</body>
+</html>

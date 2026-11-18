@@ -40,7 +40,7 @@ def _human(d: date) -> str:
 @dataclass
 class Mission:
     mission_id: str
-    kind: str  # refund_check | lost_package_check
+    kind: str  # refund_check | lost_package_check | delay_watch (BOOKLY_RESHIP=1 only: a late, not-yet-lost package)
     order_id: str
     email: str
     first_name: str
@@ -55,6 +55,7 @@ class Mission:
     outbox_id: str | None = None
     ticket_id: str | None = None
     message_for_customer: str | None = None  # set when a person takes over
+    agent_note: str | None = None  # delay_watch only: what code decided after reading the reply, in code's words
     history: list[dict] = field(default_factory=list)
 
     def note(self, today: date, event: str, **detail) -> None:
@@ -70,6 +71,8 @@ class Mission:
 
     def next_step(self, outcome: str | None = None) -> str:
         """What the conversational model should do about this follow-up, in words the system writes."""
+        if self.kind == "delay_watch" and self.agent_note:
+            return f"Follow-up {self.mission_id}: {self.agent_note}"
         if self.status == "closed_resolved":
             return (f"Follow-up {self.mission_id}: the customer said {self.subject} arrived, and the system closed it. "
                     "If you have not yet, thank them in one sentence. Do not ask about it again.")
@@ -131,12 +134,24 @@ class Missions:
             due_on=today + timedelta(days=config.LOST_PACKAGE_CHECK_DAYS),
         )
 
+    def open_delay_watch(self, order, today: date) -> Mission:
+        """BOOKLY_RESHIP=1 only. A late package that is not lost yet: Bookly asks again soon, so the next visit
+        has a follow-up to read the customer's answer against."""
+        return self._add(
+            kind="delay_watch", order_id=order.order_id, email=order.email,
+            first_name=order.customer_name.split()[0], subject=f"the package for order {order.order_id}",
+            origin={"eta": order.eta.isoformat() if order.eta else None,
+                    "last_scan_at": order.last_scan_at.isoformat() if order.last_scan_at else None},
+            opened_on=today, due_on=add_business_days(today, config.DELAY_WATCH_BUSINESS_DAYS),
+        )
+
     def run_due(self, today: date, backend, kb, outbox: list[dict]) -> list[dict]:
         """The scheduled check. Sends what is due and closes or escalates what expired. All dates are code."""
         events = []
         for m in self.items:
             if m.status == "scheduled" and m.due_on <= today:
-                template = "follow_up_refund_check" if m.kind == "refund_check" else "follow_up_lost_package_check"
+                template = {"refund_check": "follow_up_refund_check", "delay_watch": "follow_up_delay_watch"}.get(
+                    m.kind, "follow_up_lost_package_check")
                 text = kb.message(template, first_name=m.first_name, order_id=m.order_id,
                                   amount=f"${m.origin.get('amount', 0):,.2f}")
                 m.outbox_id = f"OUT-{len(outbox) + 1:04d}"
@@ -147,7 +162,7 @@ class Missions:
                 m.note(today, "asked", outbox_id=m.outbox_id)
                 events.append({"mission_id": m.mission_id, "event": "asked", "to_status": m.status})
             elif m.status == "awaiting_reply" and m.expires_on and m.expires_on <= today:
-                if m.kind == "refund_check":  # no answer about money that was sent: close quietly
+                if m.kind in ("refund_check", "delay_watch"):  # no answer about money that was sent: close quietly
                     m.status = "closed_no_reply"
                 else:  # no answer about a package that never came: a person should look
                     ticket = backend.create_ticket("followup_unresolved", {
@@ -180,7 +195,11 @@ def read_reply(store, session, toolbox, mission: Mission, messages: list[str]) -
         latency = answer.latency_ms
         outcome = judgments.decide_follow_up(answer.probs, mission.asks)
 
-    if outcome == "close":
+    if mission.kind == "delay_watch":  # BOOKLY_RESHIP=1: a "not arrived" here never opens a ticket on its own
+        from bookly import reship
+
+        outcome = reship.apply_delay_watch_reply(store, session, toolbox, mission, outcome)
+    elif outcome == "close":
         mission.status = "closed_resolved"
     elif outcome == "escalate":
         result = toolbox.handoff(

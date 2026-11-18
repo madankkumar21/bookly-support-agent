@@ -40,6 +40,9 @@ ROUTER_ENGINE = os.getenv("BOOKLY_ROUTER_ENGINE", "haiku")  # haiku | jev (bookl
 # Jev, TypeSafe's decision model, and the cross-session store. Both off by default (docs/JEV.md).
 # Jev answers typed yes/no questions with a probability; code decides what to do with the answers.
 STORE_ENABLED = os.getenv("BOOKLY_STORE", "0") == "1"  # customer memory, recommendations, follow-ups
+# Reship journey (docs/CU_JOURNEY.md). Needs the store. Off by default: with it off nothing below changes.
+RESHIP_ENABLED = os.getenv("BOOKLY_RESHIP", "0") == "1"
+DELAY_WATCH_BUSINESS_DAYS = 1  # a delay_watch follow-up is due this many business days after it opens
 
 
 def jev_key_present() -> bool:

@@ -118,3 +118,15 @@ messages:
   follow_up_lost_package_check: >-
     Hello {first_name}, this is Bookly. We are following up on the package for order {order_id} that did not
     arrive. Has it reached you since? You can answer in the chat on our site.
+  # Reship journey only (BOOKLY_RESHIP=1, docs/CU_JOURNEY.md). The code sends these; the model never writes its own.
+  follow_up_delay_watch: >-
+    Hello {first_name}, this is Bookly. Your package for order {order_id} is running late. Has it reached you
+    yet? You can answer in the chat on our site.
+  reship_requested: >-
+    I'm sorry. The tracking for order {order_id} has not updated since {last_scan}, so we now treat the
+    package as lost. I've asked our team to send you a replacement copy of {title} at no cost. I'll confirm
+    here as soon as it is sent.
+  reship_done: >-
+    Your replacement copy of {title} is on its way (reship {reship_id}). {visits_line} {priority_line}
+  reship_priority_line: >-
+    A member of our team will also check in with you by email.

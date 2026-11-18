@@ -30,6 +30,7 @@ from bookly import config, judgments
 from bookly import memory as customer_memory
 from bookly import missions as follow_ups
 from bookly import recommend as recommender
+from bookly import reship
 from bookly.backend import Backend
 from bookly.gate import register_customer_reply
 from bookly.kb import PolicyText
@@ -112,6 +113,7 @@ class TurnResult:
     handoff: dict | None
     events: list[dict]
     usage: dict
+    notes: list[str] = field(default_factory=list)  # grey system notes written by code (BOOKLY_RESHIP=1 only)
 
 
 @dataclass
@@ -278,10 +280,12 @@ class Agent:
             self._remember(s, content, button, signal)
 
         self._asked_follow_up = judgments.FOLLOW_UP_YES in options
+        notes = reship.escalation_notes(self.toolbox, reply) if reship.enabled(self.store) else []
         s.log("agent", text=reply, options=options)
         after = self.usage.as_dict()
         turn_usage = {k: (round(after[k] - usage_before[k], 5) if isinstance(after[k], (int, float)) else after[k]) for k in after}
-        return TurnResult(reply=reply, options=options, card=card, handoff=s.handoff, events=s.trace[first_event:], usage=turn_usage)
+        return TurnResult(reply=reply, options=options, card=card, handoff=s.handoff, events=s.trace[first_event:], usage=turn_usage,
+                          notes=notes)
 
     # ---- store on only (BOOKLY_STORE=1): memory, recommendations, follow-ups ---------------------------
     def _facts(self, s: Session) -> str:

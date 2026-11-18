@@ -79,6 +79,12 @@
       "status": "shipped", "placed_at": "2026-09-16", "shipped_at": "2026-09-18",
       "carrier": "USPS", "tracking_number": "9400100000000000001013", "eta": "2026-09-23", "last_scan_at": "2026-09-19",
       "items": [{"item_id": "BK-1013-1", "title": "Fourth Wing", "format": "print", "price": 18.00}]
+    },
+    {
+      "order_id": "BK-1020", "customer_name": "Riley Morgan", "email": "riley.morgan@example.com",
+      "status": "shipped", "placed_at": "2026-10-01", "shipped_at": "2026-10-02",
+      "carrier": "USPS", "tracking_number": "9400100000000000001020", "eta": "2026-10-08", "last_scan_at": "2026-10-09",
+      "items": [{"item_id": "BK-1020-1", "title": "The Hobbit", "format": "print", "price": 14.99}]
     }
   ]
 }

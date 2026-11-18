@@ -14,6 +14,7 @@ from bookly import config, judgments
 from bookly import contact as last_contact
 from bookly import missions as follow_ups
 from bookly import recommend as recommender
+from bookly import reship as reships
 from bookly.backend import Backend, ItemAlreadyReturned, normalize_order_id
 from bookly.gate import check_create_return
 from bookly.kb import PolicyText
@@ -186,6 +187,7 @@ class Toolbox:
         self.return_contact: dict | None = None  # how the last conversation ended (bookly/contact.py)
         self.return_contact_turn: int | None = None
         self.escalate_early = False  # set by code when the last contact ended angry and unresolved
+        self.escalation_noted: set[str] = set()  # reship ids whose staff-escalation note this chat showed
 
     def run(self, name: str, args: dict[str, Any]) -> tuple[dict, bool]:
         """Execute one tool call. Returns (result, is_error). Never raises into the model loop."""
@@ -241,6 +243,8 @@ class Toolbox:
         }
         if self.store:
             result["customer_record"] = self._customer_record(order)
+            if reships.enabled(self.store):  # BOOKLY_RESHIP=1: a late package gets a delay_watch follow-up
+                reships.maybe_open_watch(self, order)
         return result
 
     def _customer_record(self, order) -> dict:
@@ -257,8 +261,6 @@ class Toolbox:
         if self.return_contact_turn is None:  # once per conversation, at the first verified order
             self.return_contact_turn = self.s.turn
             self.return_contact = last_contact.on_return(self.store, self.s, self, email)
-        if self.return_contact and self.return_contact["first"]:
-            record["last_contact"] = self.return_contact["first"]
         notes = []
         for m in self.store.missions.awaiting([order.order_id]):
             said = [e["text"] for e in self.s.trace
@@ -272,6 +274,9 @@ class Toolbox:
             notes.append(m.next_step(outcome))
         if notes:
             record["follow_ups"] = notes
+        # After the follow-up reads: a reship request (BOOKLY_RESHIP=1) can replace the chat offer of a person.
+        if self.return_contact and self.return_contact["first"]:
+            record["last_contact"] = self.return_contact["first"]
         return record
 
     def store_facts(self) -> list[str]:
@@ -296,6 +301,8 @@ class Toolbox:
         for m in self.store.missions.items:
             if m.order_id in self.s.verified_orders and (m.status == "awaiting_reply" or m.mission_id in self.follow_up_outcomes):
                 lines.append("- " + m.next_step(self.follow_up_outcomes.get(m.mission_id)))
+        if reships.enabled(self.store):
+            lines += reships.facts(self)
         return lines
 
     def _t_recommend_books(self, genres: list[str]) -> dict:
@@ -426,6 +433,16 @@ class Toolbox:
         return {"status": "sent", "message_for_customer": self.kb.message("password_reset")}
 
     def _t_handoff_to_human(self, reason_code: str, summary: str) -> dict:
+        if reason_code == "lost_package" and reships.enabled(self.store):
+            # BOOKLY_RESHIP=1: code already requested a replacement for this lost package, so no second path opens.
+            req = next((r for r in self.b.reship_requests if r.order_id in self.s.verified_orders), None)
+            if req is not None:
+                self.s.log("reship", order_id=req.order_id, request_id=req.request_id,
+                           decision="lost-package hand-off not needed: code already requested a reship")
+                return {"status": "not_needed", "reship_request_id": req.request_id,
+                        "next_step": "The system already requested a replacement for this lost package. Do not hand "
+                                     "off. Tell the customer the replacement request is in, and that you will confirm "
+                                     "when it is sent."}
         return self.handoff(reason_code, summary)
 
     def handoff(self, reason_code: str, summary: str, extra: dict | None = None) -> dict:

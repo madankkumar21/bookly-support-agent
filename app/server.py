@@ -81,7 +81,8 @@ def _public_event(e: dict) -> dict:
             "source", "model", "stop_reason", "latency_ms", "card",
             "skipped", "intents", "confidence", "fallback", "procedures", "route_error",  # route rows
             "purpose", "answers", "decision", "mission_id", "to_status", "jev_error", "titles",
-            "ended", "mood", "gave_up"}  # store rows
+            "ended", "mood", "gave_up",  # store rows
+            "order_id", "checks", "request_id", "priority"}  # reship rows (BOOKLY_RESHIP=1)
     out = {k: v for k, v in e.items() if k in keep}
     if e["kind"] == "tool_result":
         out["result"] = e["result"]
@@ -148,6 +149,67 @@ def reset_store() -> dict:
     return {"store": _store.snapshot(), "systems": _store.backend.snapshot()}
 
 
+# ---- the order console (BOOKLY_RESHIP=1 only) ---------------------------------------------------------
+# A deliberately old-style staff page, simulated for the demo (docs/CU_JOURNEY.md). Its one write, Reship, is
+# accepted only for an order that has a pending reship_request, which only code writes (bookly/reship.py).
+
+class ReshipIn(BaseModel):
+    order_id: str = Field(max_length=16)
+    reason_code: str = Field(max_length=32)
+
+
+def _console_store() -> Store:
+    store = get_store()
+    if store is None or not config.RESHIP_ENABLED:
+        raise HTTPException(404, "the order console is off; start the server with BOOKLY_STORE=1 BOOKLY_RESHIP=1")
+    return store
+
+
+@app.get("/admin")
+def admin_page() -> FileResponse:
+    _console_store()
+    return FileResponse(STATIC / "admin.html")
+
+
+@app.get("/admin/api/queue")
+def admin_queue() -> dict:
+    store = _console_store()
+    with store.lock:
+        return {"today": store.backend.today.isoformat(),
+                "requests": [{"request_id": r.request_id, "order_id": r.order_id, "reason_code": r.reason_code,
+                              "requested_on": r.requested_on, "priority": r.priority, "status": r.status}
+                             for r in store.backend.reship_requests]}
+
+
+@app.get("/admin/api/order/{order_id}")
+def admin_order(order_id: str) -> dict:
+    from bookly.backend import normalize_order_id
+
+    store = _console_store()
+    with store.lock:
+        b = store.backend
+        o = b.orders.get(normalize_order_id(order_id) or "")
+        if o is None:
+            raise HTTPException(404, "ORDER NOT FOUND")
+        return {"order_id": o.order_id, "customer_name": o.customer_name, "email": o.email, "status": o.status,
+                "placed_at": o.placed_at.isoformat(), "shipped_at": o.shipped_at.isoformat() if o.shipped_at else None,
+                "carrier": o.carrier, "tracking_number": o.tracking_number, "eta": o.eta.isoformat() if o.eta else None,
+                "last_scan_at": o.last_scan_at.isoformat() if o.last_scan_at else None, "total": b.order_total(o.order_id),
+                "items": [{"item_id": i.item_id, "title": i.title, "format": i.format, "price": i.price} for i in o.items],
+                "history": [{"kind": type(r).__name__, **{k: v for k, v in vars(r).items() if k != "cites"}}
+                            for r in b.reship_history(o.order_id)]}
+
+
+@app.post("/admin/api/reship")
+def admin_reship(body: ReshipIn) -> dict:
+    store = _console_store()
+    with store.lock:
+        result = store.backend.reship(body.order_id, body.reason_code, store.policy.approval_cap)
+    if result["status"] != "reshipped":
+        raise HTTPException(409, result)
+    return result
+
+
 @app.post("/api/chat")
 def chat(body: ChatIn) -> dict:
     agent = _sessions.get(body.session_id)
@@ -185,6 +247,7 @@ def chat(body: ChatIn) -> dict:
         "handoff": t.handoff,
         "events": [_public_event(e) for e in t.events if e["kind"] not in ("customer", "agent")],
         "latency_ms": t.usage["latency_ms"],
+        **({"notes": t.notes} if t.notes else {}),  # grey system notes written by code (BOOKLY_RESHIP=1 only)
         "systems": agent.backend.snapshot(),
         **({"store": agent.store.snapshot()} if agent.store else {}),
     }
