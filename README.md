@@ -1,6 +1,6 @@
 # Bookly support agent
 
-This is my take-home for Decagon: a customer-support agent for Bookly, a fictional online bookstore. It handles order status, returns and refunds, and policy questions.
+This is a customer-support agent for Bookly, a fictional online bookstore. I built it as a take-home exercise. It handles order status, returns and refunds, and policy questions.
 
 My belief is that a great CX agent is one the business can trust with money and can change without the vendor. So the AI handles the conversation, Bookly's refund rules run as code Bookly owns, and nothing is refunded until the customer confirms the terms. And Bookly's own team can edit a policy value, re-run the 80 conversations and see what moved, with no engineer and no prompt edit (the change test, below).
 
