@@ -20,7 +20,7 @@ Report and every transcript: [evals/results/2026-10-13-sonnet-k5-v2/](evals/resu
 
 https://github.com/user-attachments/assets/0a5f7e46-867d-4402-b0af-ec0987bdfcff
 
-*Full video above (64 s). The last frame is also saved as [docs/media/journey-final.png](docs/media/journey-final.png). A [GIF version](docs/media/journey.gif) and the [MP4 file](docs/media/journey.mp4) are in `docs/media/`.*
+*Full video above (76 s, with four 3-second title cards). The last frame is also saved as [docs/media/journey-final.png](docs/media/journey-final.png). A [GIF version](docs/media/journey.gif) and the [MP4 file](docs/media/journey.mp4) are in `docs/media/`.*
 
 **What you're watching.** One customer has one late package. The customer contacts Bookly three times over a week. The video shows all three visits in about 60 seconds.
 

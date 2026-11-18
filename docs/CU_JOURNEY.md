@@ -136,7 +136,7 @@ With `BOOKLY_RESHIP` off, nothing changes. A reship without the priority flag st
 
 **Result: 1 run, 1 attempt, passed.** Every check passed, including the new handoff check. Computer use took 15 actions and 7 model requests, for $0.130. Jev cost $0.0006. The run took 62 seconds.
 
-Video: [`docs/media/journey.mp4`](media/journey.mp4) (0.9 MB, 64 s). It is the combined video of run 4. The repo does not keep the raw WebM recordings or the result JSON. The combined video now holds its last frame for 3 more seconds (`tpad` in `combine`), and the harness scrolls the handoff card into view before the end, so the card and the note can be read.
+Video: [`docs/media/journey.mp4`](media/journey.mp4) (1.3 MB, 76 s). It is the combined video of run 4, with four 3-second title cards added afterward: one before each visit and one before the console. The repo does not keep the raw WebM recordings or the result JSON. The combined video now holds its last frame for 3 more seconds (`tpad` in `combine`), and the harness scrolls the handoff card into view before the end, so the card and the note can be read.
 
 ## Limits, stated plainly
 
